@@ -16,11 +16,12 @@ Euro Truck Simulator 2 (mapa RBR).
 ## Como rodar
 
 ### 1. Backend
-Precisa de **Java 21** e **Maven**.
+Precisa de **Java 21**. O Maven vem junto pelo wrapper — não precisa instalar.
 ```bash
 cd backend
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
+(No Windows, `mvnw spring-boot:run`. Quem já tem Maven pode usar `mvn` direto.)
 Sobe em `http://localhost:8080`.
 
 A cada boot ele semeia dados de desenvolvimento (2 usuários, 3 caminhões,
@@ -459,7 +460,6 @@ dentro do `lk-telemetria.json` do pacote.
 - Comprovante de abastecimento no formato de notinha térmica
 - Upload de screenshot em multas e ocorrências (o campo já existe no modelo)
 - Testes automatizados
-- Maven wrapper (`mvn wrapper:wrapper` gera)
 
 ## Produção
 
