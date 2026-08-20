@@ -252,8 +252,8 @@ function ModalMotorista({ usuario, onFechar, onSalvo }: {
   const [email, setEmail] = useState(usuario?.email ?? '');
   const [papel, setPapel] = useState<Usuario['papel']>(usuario?.papel ?? 'MOTORISTA');
   const [senha, setSenha] = useState('');
-  // Vazio = usa o percentual padrão da empresa.
-  const [comissao, setComissao] = useState(usuario?.percentualComissao != null ? String(usuario.percentualComissao) : '');
+  // Vazio = usa o valor por km padrão da empresa.
+  const [comissao, setComissao] = useState(usuario?.valorKmComissao != null ? String(usuario.valorKmComissao) : '');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -263,7 +263,7 @@ function ModalMotorista({ usuario, onFechar, onSalvo }: {
     try {
       if (editando) {
         await api.put(`/usuarios/${usuario.id}`, { nome, email, papel, novaSenha: senha || undefined });
-        await api.post(`/financeiro/percentual/${usuario.id}`, { percentual: comissao === '' ? null : comissao });
+        await api.post(`/financeiro/valor-km/${usuario.id}`, { valorKm: comissao === '' ? null : comissao });
       } else {
         await api.post('/usuarios', { nome, email, papel, senha });
       }
@@ -301,8 +301,8 @@ function ModalMotorista({ usuario, onFechar, onSalvo }: {
         </label>
 
         <label className="campo">
-          <span>Comissão em % (vazio = padrão da empresa)</span>
-          <input value={comissao} inputMode="decimal" placeholder="12"
+          <span>Comissão em R$ por km (vazio = padrão da empresa)</span>
+          <input value={comissao} inputMode="decimal" placeholder="0,35"
                  onChange={(e) => setComissao(e.target.value)} />
         </label>
 

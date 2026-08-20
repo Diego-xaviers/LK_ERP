@@ -15,9 +15,17 @@ import java.util.UUID;
 /**
  * Caixa da empresa e acerto com os motoristas.
  *
- * Regra de comissão combinada: percentual sobre o frete MENOS as despesas da
- * viagem (abastecimento, pedágio, multa, manutenção). Quem roda mal ganha
- * menos, porque o custo sai da mesma base.
+ * Regra de comissão: valor por QUILÔMETRO RODADO, como boa parte das
+ * transportadoras paga motorista de verdade.
+ *
+ * Era percentual sobre o frete, e o problema disso não é o percentual — 12% do
+ * frete bruto é o que um agregado ganha na vida real. É que o jogo comprime o
+ * tempo: a viagem que leva 8 horas num caminhão de verdade leva 40 minutos no
+ * ETS2. Pagando por carga, uma noite de jogo rendia salário de mês.
+ *
+ * O km vem da telemetria — o mesmo número que a conferência já exige para
+ * aceitar a viagem. Sem agente ligado não há km confirmado, e sem km não há
+ * comissão: a mesma prova serve para as duas coisas.
  */
 @Service
 public class FinanceiroService {
@@ -28,16 +36,19 @@ public class FinanceiroService {
     private final ViagemRepository viagens;
     private final UsuarioRepository usuarios;
     private final CarteiraService carteira;
+    private final TelemetriaViagemRepository telemetrias;
 
     public FinanceiroService(CaixaRepository caixas, MovimentoCaixaRepository movimentos,
                              PagamentoRepository pagamentos, ViagemRepository viagens,
-                             UsuarioRepository usuarios, CarteiraService carteira) {
+                             UsuarioRepository usuarios, CarteiraService carteira,
+                             TelemetriaViagemRepository telemetrias) {
         this.caixas = caixas;
         this.movimentos = movimentos;
         this.pagamentos = pagamentos;
         this.viagens = viagens;
         this.usuarios = usuarios;
         this.carteira = carteira;
+        this.telemetrias = telemetrias;
     }
 
     /** Linha única, criada na primeira vez que alguém olha o financeiro. */
@@ -50,22 +61,37 @@ public class FinanceiroService {
     // Comissão
     // ------------------------------------------------------------------
 
-    public BigDecimal percentualDe(Usuario motorista) {
-        return motorista.getPercentualComissao() != null
-                ? motorista.getPercentualComissao()
-                : caixa().getPercentualComissaoPadrao();
+    public BigDecimal valorKmDe(Usuario motorista) {
+        return motorista.getValorKmComissao() != null
+                ? motorista.getValorKmComissao()
+                : caixa().getValorKmPadrao();
     }
 
-    /** Base do cálculo: frete menos despesas, nunca negativa. */
+    /**
+     * Quilometragem que o jogo confirmou nesta viagem.
+     *
+     * Só conta o que a telemetria apurou. Viagem sem agente ligado devolve zero
+     * — e é de propósito: essa viagem já nasce retida na conferência, porque não
+     * há como provar que ela aconteceu. Pagar por km que ninguém mediu seria
+     * abrir pela porta dos fundos a fraude que a conferência fecha na frente.
+     */
+    public BigDecimal kmDe(Viagem v) {
+        Double km = telemetrias.findByViagemId(v.getId())
+                .map(TelemetriaViagem::getDistanciaConfirmadaKm)
+                .orElse(null);
+        if (km == null || km <= 0) return BigDecimal.ZERO;
+        return BigDecimal.valueOf(km).setScale(1, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal comissaoDe(Viagem v, BigDecimal valorKm) {
+        return kmDe(v).multiply(valorKm).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Continua servindo ao painel: o que a viagem rendeu à empresa depois do custo declarado. */
     public BigDecimal baseDe(Viagem v) {
         BigDecimal frete = v.getValorFrete() == null ? BigDecimal.ZERO : v.getValorFrete();
         BigDecimal base = frete.subtract(v.totalDespesas());
         return base.signum() < 0 ? BigDecimal.ZERO : base;
-    }
-
-    public BigDecimal comissaoDe(Viagem v, BigDecimal percentual) {
-        return baseDe(v).multiply(percentual)
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 
     // ------------------------------------------------------------------
@@ -118,15 +144,17 @@ public class FinanceiroService {
             throw new IllegalStateException("Não há viagem liberada para acertar com este motorista.");
         }
 
-        BigDecimal percentual = percentualDe(motorista);
+        BigDecimal valorKm = valorKmDe(motorista);
         BigDecimal totalFrete = BigDecimal.ZERO;
         BigDecimal totalDespesas = BigDecimal.ZERO;
+        BigDecimal totalKm = BigDecimal.ZERO;
         BigDecimal total = BigDecimal.ZERO;
 
         for (Viagem v : selecionadas) {
             totalFrete = totalFrete.add(v.getValorFrete() == null ? BigDecimal.ZERO : v.getValorFrete());
             totalDespesas = totalDespesas.add(v.totalDespesas());
-            total = total.add(comissaoDe(v, percentual));
+            totalKm = totalKm.add(kmDe(v));
+            total = total.add(comissaoDe(v, valorKm));
         }
 
         Caixa c = caixa();
@@ -137,7 +165,8 @@ public class FinanceiroService {
         p.setNumero(pagamentos.ultimoNumero() + 1);
         p.setMotorista(motorista);
         p.setValor(total);
-        p.setPercentualAplicado(percentual);
+        p.setValorKmAplicado(valorKm);
+        p.setBaseKm(totalKm);
         p.setBaseFrete(totalFrete);
         p.setBaseDespesas(totalDespesas);
         p.setObservacao(observacao);
@@ -153,9 +182,10 @@ public class FinanceiroService {
         MovimentoCaixa m = new MovimentoCaixa();
         m.setTipo(MovimentoCaixa.Tipo.COMISSAO);
         m.setValor(total);
-        m.setDescricao("Acerto #%d com %s — %d viagem(ns) a %s%%".formatted(
+        m.setDescricao("Acerto #%d com %s — %d viagem(ns), %s km a R$ %s/km".formatted(
                 p.getNumero(), motorista.getNome(), selecionadas.size(),
-                percentual.stripTrailingZeros().toPlainString()));
+                totalKm.stripTrailingZeros().toPlainString(),
+                valorKm.stripTrailingZeros().toPlainString()));
         m.setSaldoDepois(c.getSaldo());
         m.setPagamento(p);
         m.setRegistradoPor(gestor);
@@ -202,9 +232,12 @@ public class FinanceiroService {
     }
 
     @Transactional
-    public Caixa definirPercentualPadrao(BigDecimal percentual) {
+    public Caixa definirValorKmPadrao(BigDecimal valorKm) {
+        if (valorKm == null || valorKm.signum() < 0) {
+            throw new IllegalArgumentException("O valor por km não pode ser negativo.");
+        }
         Caixa c = caixa();
-        c.setPercentualComissaoPadrao(percentual);
+        c.setValorKmPadrao(valorKm);
         return caixas.save(c);
     }
 

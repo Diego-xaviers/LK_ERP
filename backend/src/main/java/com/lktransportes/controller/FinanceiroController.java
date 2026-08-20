@@ -41,7 +41,7 @@ public class FinanceiroController {
 
         Map<String, Object> resposta = new LinkedHashMap<>();
         resposta.put("saldo", c.getSaldo());
-        resposta.put("percentualPadrao", c.getPercentualComissaoPadrao());
+        resposta.put("valorKmPadrao", c.getValorKmPadrao());
         resposta.put("aPagar", porMotorista.stream()
                 .map(x -> (BigDecimal) x.get("comissaoTotal"))
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
@@ -87,36 +87,39 @@ public class FinanceiroController {
         return Map.of("saldo", c.getSaldo());
     }
 
-    @PostMapping("/percentual-padrao")
-    public Map<String, Object> percentualPadrao(@RequestBody Map<String, Object> body) {
+    @PostMapping("/valor-km-padrao")
+    public Map<String, Object> valorKmPadrao(@RequestBody Map<String, Object> body) {
         sessao.exigirGestor();
-        Caixa c = service.definirPercentualPadrao(new BigDecimal(String.valueOf(body.get("percentual"))));
-        return Map.of("percentualPadrao", c.getPercentualComissaoPadrao());
+        Caixa c = service.definirValorKmPadrao(new BigDecimal(String.valueOf(body.get("valorKm"))));
+        return Map.of("valorKmPadrao", c.getValorKmPadrao());
     }
 
-    /** Comissão específica de um motorista. Vazio volta para o padrão da empresa. */
-    @PostMapping("/percentual/{motoristaId}")
-    public Map<String, Object> percentualDoMotorista(@PathVariable UUID motoristaId,
-                                                     @RequestBody Map<String, Object> body) {
+    /** Valor por km específico de um motorista. Vazio volta para o padrão da empresa. */
+    @PostMapping("/valor-km/{motoristaId}")
+    public Map<String, Object> valorKmDoMotorista(@PathVariable UUID motoristaId,
+                                                  @RequestBody Map<String, Object> body) {
         sessao.exigirGestor();
         Usuario m = usuarios.findById(motoristaId).orElseThrow();
-        Object valor = body.get("percentual");
-        m.setPercentualComissao(valor == null || String.valueOf(valor).isBlank()
+        Object valor = body.get("valorKm");
+        m.setValorKmComissao(valor == null || String.valueOf(valor).isBlank()
                 ? null : new BigDecimal(String.valueOf(valor)));
         usuarios.save(m);
-        return Map.of("percentual", service.percentualDe(m));
+        return Map.of("valorKm", service.valorKmDe(m));
     }
 
     // ------------------------------------------------------------------
 
     private Map<String, Object> resumoDoMotorista(Usuario m, List<Viagem> pagaveis) {
-        BigDecimal percentual = service.percentualDe(m);
+        BigDecimal valorKm = service.valorKmDe(m);
         List<Map<String, Object>> linhas = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
+        BigDecimal totalKm = BigDecimal.ZERO;
 
         for (Viagem v : pagaveis) {
-            BigDecimal comissao = service.comissaoDe(v, percentual);
+            BigDecimal comissao = service.comissaoDe(v, valorKm);
+            BigDecimal km = service.kmDe(v);
             total = total.add(comissao);
+            totalKm = totalKm.add(km);
 
             Map<String, Object> linha = new LinkedHashMap<>();
             linha.put("id", v.getId());
@@ -128,6 +131,9 @@ public class FinanceiroController {
             linha.put("valorFrete", v.getValorFrete());
             linha.put("despesas", v.totalDespesas());
             linha.put("base", service.baseDe(v));
+            // Sem telemetria não há km confirmado — e o gestor precisa ver isso,
+            // senão a comissão zerada parece defeito em vez de regra.
+            linha.put("km", km);
             linha.put("comissao", comissao);
             linha.put("conferencia", v.getConferencia() == null ? null : v.getConferencia().name());
             linhas.add(linha);
@@ -136,9 +142,10 @@ public class FinanceiroController {
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("motoristaId", m.getId());
         r.put("motorista", m.getNome());
-        r.put("percentual", percentual);
-        r.put("percentualProprio", m.getPercentualComissao());
+        r.put("valorKm", valorKm);
+        r.put("valorKmProprio", m.getValorKmComissao());
         r.put("viagens", linhas);
+        r.put("kmTotal", totalKm);
         r.put("comissaoTotal", total);
         return r;
     }
@@ -149,7 +156,8 @@ public class FinanceiroController {
         m.put("numero", p.getNumero());
         m.put("motorista", p.getMotorista().getNome());
         m.put("valor", p.getValor());
-        m.put("percentualAplicado", p.getPercentualAplicado());
+        m.put("valorKmAplicado", p.getValorKmAplicado());
+        m.put("baseKm", p.getBaseKm());
         m.put("baseFrete", p.getBaseFrete());
         m.put("baseDespesas", p.getBaseDespesas());
         m.put("criadoEm", p.getCriadoEm());

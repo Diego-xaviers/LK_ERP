@@ -28,9 +28,13 @@ public class Pagamento {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal valor;
 
-    /** Percentual aplicado neste acerto — guardado para o recibo não mudar depois. */
-    @Column(name = "percentual_aplicado", nullable = false, precision = 5, scale = 2)
-    private BigDecimal percentualAplicado;
+    /** Valor por km aplicado neste acerto — guardado para o recibo não mudar depois. */
+    @Column(name = "valor_km_aplicado", nullable = false, precision = 8, scale = 3)
+    private BigDecimal valorKmAplicado;
+
+    /** Quilometragem paga, somando as viagens do acerto. */
+    @Column(name = "base_km", nullable = false, precision = 12, scale = 1)
+    private BigDecimal baseKm = BigDecimal.ZERO;
 
     /** Soma dos fretes das viagens pagas, antes de descontar despesas. */
     @Column(name = "base_frete", nullable = false, precision = 14, scale = 2)
@@ -58,8 +62,10 @@ public class Pagamento {
     public void setMotorista(Usuario u) { this.motorista = u; }
     public BigDecimal getValor() { return valor; }
     public void setValor(BigDecimal v) { this.valor = v; }
-    public BigDecimal getPercentualAplicado() { return percentualAplicado; }
-    public void setPercentualAplicado(BigDecimal v) { this.percentualAplicado = v; }
+    public BigDecimal getValorKmAplicado() { return valorKmAplicado; }
+    public void setValorKmAplicado(BigDecimal v) { this.valorKmAplicado = v; }
+    public BigDecimal getBaseKm() { return baseKm; }
+    public void setBaseKm(BigDecimal v) { this.baseKm = v; }
     public BigDecimal getBaseFrete() { return baseFrete; }
     public void setBaseFrete(BigDecimal v) { this.baseFrete = v; }
     public BigDecimal getBaseDespesas() { return baseDespesas; }

@@ -272,17 +272,31 @@ Três tipos de movimento:
 | **Ajuste** (entra ou sai) | Aporte ou retirada lançada à mão pelo gestor |
 
 ### A comissão
-Percentual sobre o **frete menos as despesas** da viagem (abastecimento,
-pedágio, multa, manutenção). Quem roda mal ganha menos, porque o custo sai da
-mesma base.
+O motorista ganha por **quilômetro rodado**, como boa parte das transportadoras
+paga motorista de verdade.
 
 ```
-base     = valor do frete − despesas da viagem   (nunca negativa)
-comissão = base × percentual
+km       = distância que o JOGO confirmou (telemetria)
+comissão = km × valor por km
 ```
 
-O percentual é o da empresa (padrão 12%), ou o do motorista se ele tiver um
-próprio (`POST /api/financeiro/percentual/{motoristaId}`).
+O valor é o da empresa (padrão R$ 0,35/km), ou o do motorista se ele tiver um
+próprio (`POST /api/financeiro/valor-km/{motoristaId}`).
+
+> **Por que não é percentual do frete.** Era, e o problema não estava no
+> percentual: 12% do frete bruto é o que um agregado ganha na vida real. O
+> problema é que o jogo comprime o tempo — a viagem de 500 km leva 8 horas num
+> caminhão e 40 minutos no ETS2. Pagando por carga, uma noite de jogo rendia
+> salário de mês. Na mesma viagem, 25 t a R$ 150/t: antes R$ 450 de comissão,
+> agora R$ 179,20 (512 km × R$ 0,35).
+
+**Sem telemetria não há comissão.** O km vem de `distanciaConfirmadaKm` — o
+mesmo número que a conferência já exige para aceitar a viagem. Quem roda sem o
+agente ligado tem viagem retida *e* zero km confirmado; se o gestor liberar
+assim mesmo, a viagem entra no acerto valendo R$ 0. Pagar por km que ninguém
+mediu seria abrir pela porta dos fundos a fraude que a conferência fecha na
+frente. O painel mostra `sem km` nessas viagens, para a comissão zerada não
+parecer defeito.
 
 ### O acerto
 Um pagamento fecha um conjunto de viagens de uma vez. Só entram viagens
@@ -566,8 +580,9 @@ segurança: se banco e entidades divergirem, o app recusa subir em vez de rodar
 torta.
 
 `V1__schema_inicial.sql` tem as 25 tabelas e 29 chaves estrangeiras, gerado a
-partir das próprias entidades. **A partir daqui, toda mudança de modelo entra
-como migração nova** (`V2__...`), nunca editando a V1.
+partir das próprias entidades. **Toda mudança de modelo entra como migração
+nova**, nunca editando uma já aplicada — `V2__comissao_por_km.sql` é a primeira
+delas, trocando o percentual de comissão pelo valor por km.
 
 Dois perfis auxiliares ajudam nisso:
 ```bash

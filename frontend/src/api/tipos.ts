@@ -211,7 +211,7 @@ export interface Usuario {
   papel: 'MOTORISTA' | 'GESTOR';
   statusAcesso: 'PENDENTE' | 'APROVADO' | 'BLOQUEADO';
   /** Comissão própria. Nulo = usa o padrão da empresa. */
-  percentualComissao?: number;
+  valorKmComissao?: number;
   /** Créditos disponíveis na loja. */
   saldoCarteira?: number;
 }

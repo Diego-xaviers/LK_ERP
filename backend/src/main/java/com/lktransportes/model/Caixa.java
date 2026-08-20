@@ -19,15 +19,20 @@ public class Caixa {
     @Column(nullable = false, precision = 16, scale = 2)
     private BigDecimal saldo = BigDecimal.ZERO;
 
-    /** Usado quando o motorista não tem percentual próprio. */
-    @Column(name = "percentual_comissao_padrao", nullable = false, precision = 5, scale = 2)
-    private BigDecimal percentualComissaoPadrao = new BigDecimal("12.00");
+    /**
+     * Quanto o motorista ganha por quilômetro rodado, quando não tem valor
+     * próprio. É assim que muita transportadora paga motorista de verdade —
+     * e, diferente do percentual sobre o frete, não transforma uma carga cara
+     * em fortuna por uma viagem só.
+     */
+    @Column(name = "valor_km_padrao", nullable = false, precision = 8, scale = 3)
+    private BigDecimal valorKmPadrao = new BigDecimal("0.350");
 
     public UUID getId() { return id; }
     public BigDecimal getSaldo() { return saldo; }
     public void setSaldo(BigDecimal v) { this.saldo = v; }
-    public BigDecimal getPercentualComissaoPadrao() { return percentualComissaoPadrao; }
-    public void setPercentualComissaoPadrao(BigDecimal v) { this.percentualComissaoPadrao = v; }
+    public BigDecimal getValorKmPadrao() { return valorKmPadrao; }
+    public void setValorKmPadrao(BigDecimal v) { this.valorKmPadrao = v; }
 
     public void creditar(BigDecimal valor) { this.saldo = this.saldo.add(valor); }
 

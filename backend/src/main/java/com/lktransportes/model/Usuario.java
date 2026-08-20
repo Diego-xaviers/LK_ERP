@@ -34,8 +34,9 @@ public class Usuario {
     private java.math.BigDecimal saldoCarteira = java.math.BigDecimal.ZERO;
 
     /** Comissão própria deste motorista. Nulo = usa o padrão da empresa. */
-    @Column(name = "percentual_comissao", precision = 5, scale = 2)
-    private java.math.BigDecimal percentualComissao;
+    /** Valor por km próprio deste motorista. Nulo = usa o padrão da empresa. */
+    @Column(name = "valor_km_comissao", precision = 8, scale = 3)
+    private java.math.BigDecimal valorKmComissao;
 
     /** Segredo que o agente de telemetria usa para se identificar. Nulo até o motorista gerar. */
 
@@ -52,8 +53,8 @@ public class Usuario {
     public void setEmail(String email) { this.email = email; }
     public java.math.BigDecimal getSaldoCarteira() { return saldoCarteira; }
     public void setSaldoCarteira(java.math.BigDecimal v) { this.saldoCarteira = v; }
-    public java.math.BigDecimal getPercentualComissao() { return percentualComissao; }
-    public void setPercentualComissao(java.math.BigDecimal v) { this.percentualComissao = v; }
+    public java.math.BigDecimal getValorKmComissao() { return valorKmComissao; }
+    public void setValorKmComissao(java.math.BigDecimal v) { this.valorKmComissao = v; }
 
     @JsonIgnore
     public String getSenhaHash() { return senhaHash; }

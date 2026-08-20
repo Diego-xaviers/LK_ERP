@@ -10,22 +10,23 @@ import './Financeiro.css';
 interface ViagemPagavel {
   id: string; numero: number; origem: string; destino: string; carga: string;
   finalizadaEm: string; valorFrete: number; despesas: number; base: number;
-  comissao: number; conferencia: string;
+  km: number; comissao: number; conferencia: string;
 }
 interface ResumoMotorista {
-  motoristaId: string; motorista: string; percentual: number;
-  percentualProprio?: number; viagens: ViagemPagavel[]; comissaoTotal: number;
+  motoristaId: string; motorista: string; valorKm: number;
+  valorKmProprio?: number; viagens: ViagemPagavel[];
+  kmTotal: number; comissaoTotal: number;
 }
 interface Movimento {
   id: string; tipo: 'FRETE' | 'COMISSAO' | 'AJUSTE'; entrada: boolean;
   valor: number; descricao: string; saldoDepois: number; criadoEm: string;
 }
 interface Painel {
-  saldo: number; percentualPadrao: number; aPagar: number;
+  saldo: number; valorKmPadrao: number; aPagar: number;
   motoristas: ResumoMotorista[]; extrato: Movimento[];
 }
 interface Pagamento {
-  id: string; numero: number; valor: number; percentualAplicado: number;
+  id: string; numero: number; valor: number; valorKmAplicado: number; baseKm: number;
   baseFrete: number; baseDespesas: number; criadoEm: string; criadoPor?: string; observacao?: string;
 }
 interface Ganhos extends ResumoMotorista {
@@ -72,7 +73,7 @@ function VisaoGestor() {
         </div>
         <div className="fin__cartao">
           <span>Comissão padrão</span>
-          <strong>{dados.percentualPadrao}%</strong>
+          <strong>{brl(dados.valorKmPadrao)}/km</strong>
         </div>
       </section>
 
@@ -88,15 +89,15 @@ function VisaoGestor() {
                 <header>
                   <div>
                     <h3>{m.motorista}</h3>
-                    <span>{m.viagens.length} viagem(ns) · comissão de {m.percentual}%
-                      {m.percentualProprio != null && ' (própria)'}</span>
+                    <span>{m.viagens.length} viagem(ns) · {km(m.kmTotal)} km a {brl(m.valorKm)}/km
+                      {m.valorKmProprio != null && ' (própria)'}</span>
                   </div>
                   <strong>{brl(m.comissaoTotal)}</strong>
                 </header>
 
                 <table className="fin__tabela">
                   <thead>
-                    <tr><th>Viagem</th><th>Rota</th><th>Frete</th><th>Despesas</th><th>Base</th><th>Comissão</th></tr>
+                    <tr><th>Viagem</th><th>Rota</th><th>Frete</th><th>Despesas</th><th>Km rodados</th><th>Comissão</th></tr>
                   </thead>
                   <tbody>
                     {m.viagens.map((v) => (
@@ -105,7 +106,10 @@ function VisaoGestor() {
                         <td>{v.origem} → {v.destino}</td>
                         <td>{brl(v.valorFrete)}</td>
                         <td className={v.despesas > 0 ? "is-saida" : ""}>{v.despesas > 0 ? "−" : ""}{brl(v.despesas)}</td>
-                        <td>{brl(v.base)}</td>
+                        <td className={v.km === 0 ? 'is-saida' : ''}>
+                          {v.km > 0 ? `${km(v.km)} km`
+                                    : <em title="Viagem sem telemetria: o jogo não confirmou distância">sem km</em>}
+                        </td>
                         <td className="is-forte">{brl(v.comissao)}</td>
                       </tr>
                     ))}
@@ -179,7 +183,8 @@ function ModalAcerto({ resumo, onFechar, onPago }: {
         <h3>Acerto com {resumo.motorista}</h3>
         <div className="fin__resumo-modal">
           <div><span>Viagens</span><strong>{resumo.viagens.length}</strong></div>
-          <div><span>Comissão</span><strong>{resumo.percentual}%</strong></div>
+          <div><span>Km</span><strong>{km(resumo.kmTotal)}</strong></div>
+          <div><span>Por km</span><strong>{brl(resumo.valorKm)}</strong></div>
           <div><span>Total</span><strong className="is-forte">{brl(resumo.comissaoTotal)}</strong></div>
         </div>
         <label className="campo">
@@ -277,7 +282,7 @@ function VisaoMotorista() {
       <header className="fin__head">
         <div>
           <h1>Meus ganhos</h1>
-          <p>Sua comissão é de {dados.percentual}% sobre o frete menos as despesas da viagem</p>
+          <p>Você ganha {brl(dados.valorKm)} por quilômetro rodado — contado pela telemetria do jogo</p>
         </div>
       </header>
 
@@ -329,15 +334,15 @@ function VisaoMotorista() {
         ) : (
           <table className="fin__tabela">
             <thead>
-              <tr><th>Acerto</th><th>Quando</th><th>Base</th><th>%</th><th>Valor</th></tr>
+              <tr><th>Acerto</th><th>Quando</th><th>Km</th><th>Por km</th><th>Valor</th></tr>
             </thead>
             <tbody>
               {dados.pagamentos.map((p) => (
                 <tr key={p.id}>
                   <td>#{p.numero}</td>
                   <td>{quando(p.criadoEm)}</td>
-                  <td>{brl(p.baseFrete - p.baseDespesas)}</td>
-                  <td>{p.percentualAplicado}%</td>
+                  <td>{km(p.baseKm)}</td>
+                  <td>{brl(p.valorKmAplicado)}</td>
                   <td className="is-forte">{brl(p.valor)}</td>
                 </tr>
               ))}
@@ -351,6 +356,10 @@ function VisaoMotorista() {
 
 const brl = (v: number) =>
   (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** Km com uma casa: a telemetria mede em fração, e arredondar esconde viagem curta. */
+const km = (v: number) =>
+  (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function quando(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
