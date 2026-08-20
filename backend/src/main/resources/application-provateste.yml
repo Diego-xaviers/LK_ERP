@@ -1,0 +1,22 @@
+# Perfil só de teste: roda a MESMA migração do Flyway e o MESMO validate do
+# perfil prod, mas contra H2 em modo PostgreSQL. Não prova sintaxe específica
+# do Postgres — prova que schema e entidades concordam.
+spring:
+  datasource:
+    url: jdbc:h2:mem:provateste;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+jwt:
+  secret: teste-de-schema-nao-usar-em-producao-000000000000
+lk:
+  origens-permitidas: http://localhost:5173
+  url-api: http://localhost:8080/api

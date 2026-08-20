@@ -1,0 +1,59 @@
+.hab__head{
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-4); margin-bottom: var(--sp-5);
+}
+.hab__head h1{ font-size: var(--text-xl); margin-bottom: 3px; }
+.hab__head p{ font-size: var(--text-base); color: var(--ink-500); margin: 0; }
+
+.hab__seletor{ display: flex; flex-direction: column; gap: 5px; min-width: 210px; }
+.hab__seletor span{ font-size: var(--text-sm); color: var(--ink-500); }
+.hab__seletor select{
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 8px 11px;
+  font-size: var(--text-base); font-family: var(--font-ui); background: var(--surface);
+}
+
+.hab__conteudo{ display: grid; grid-template-columns: minmax(0, 620px) 260px; gap: var(--sp-4); align-items: start; }
+
+.hab__lateral{ display: flex; flex-direction: column; gap: var(--sp-3); }
+.hab__cartao{
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: var(--sp-4); box-shadow: var(--shadow-xs);
+}
+.hab__cartao h2{ font-size: var(--text-base); margin-bottom: var(--sp-3); }
+
+.hab__cartao dl{ display: grid; grid-template-columns: auto 1fr; gap: 7px var(--sp-3); margin: 0; }
+.hab__cartao dt{ font-size: var(--text-sm); color: var(--ink-500); }
+.hab__cartao dd{ font-size: var(--text-sm); color: var(--ink-900); margin: 0; text-align: right; font-weight: 500; }
+
+.hab__tag{ font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .04em; }
+.hab__tag.is-ativa{ background: var(--accent-soft); color: var(--accent); }
+.hab__tag.is-vencida, .hab__tag.is-suspensa{ background: var(--danger-soft); color: var(--danger); }
+
+.hab__regras{ margin: 0; padding-left: 18px; }
+.hab__regras li{ font-size: var(--text-sm); color: var(--ink-700); margin-bottom: 5px; }
+.hab__regras b{ color: var(--danger); }
+
+.hab__nota, .hab__nota-modal{
+  font-size: var(--text-sm); color: var(--ink-500); line-height: 1.5; margin: var(--sp-3) 0 0;
+}
+.hab__nota-modal{ margin: -6px 0 var(--sp-2); }
+.hab__obs{
+  font-size: var(--text-sm); color: var(--ink-700); margin: var(--sp-3) 0 0;
+  background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 11px;
+}
+
+.hab__acoes{ display: flex; flex-direction: column; gap: var(--sp-2); }
+.hab__acoes .btn{ justify-content: center; }
+.hab__imprimir{ justify-content: center; }
+
+/* A carteira precisa de largura pra não quebrar os campos: abaixo disso a
+   lateral desce e ela fica com a linha inteira. */
+@media (max-width: 1160px){
+  .hab__conteudo{ grid-template-columns: 1fr; }
+}
+
+/* Na impressão sobra só a carteira. */
+@media print{
+  .shell__sidebar, .hab__head, .hab__lateral{ display: none !important; }
+  .hab__conteudo{ grid-template-columns: 1fr; }
+}

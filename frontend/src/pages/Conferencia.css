@@ -1,0 +1,87 @@
+.conf__head{
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-4); margin-bottom: var(--sp-5);
+}
+.conf__head h1{ font-size: var(--text-xl); margin-bottom: 3px; }
+.conf__head p{ font-size: var(--text-base); color: var(--ink-500); margin: 0; }
+.conf__contador{
+  font-size: var(--text-sm); font-weight: 600; white-space: nowrap;
+  background: var(--gold-soft); color: var(--gold-deep);
+  border-radius: 20px; padding: 6px 13px;
+}
+
+.conf__lista{ display: flex; flex-direction: column; gap: var(--sp-4); }
+.conf__cartao{
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--gold-deep);
+  border-radius: var(--radius-md); padding: var(--sp-5); box-shadow: var(--shadow-xs);
+  display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.conf__cartao > header{ display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.conf__numero{
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-400); font-weight: 600;
+}
+.conf__cartao h2{ font-size: var(--text-md); margin-top: 2px; }
+.conf__valor{ font-size: var(--text-md); font-weight: 600; color: var(--ink-900); white-space: nowrap; }
+
+.conf__rota{
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  font-size: var(--text-base); color: var(--ink-700); margin: 0;
+}
+.conf__rota svg{ color: var(--ink-400); }
+.conf__rota em{ font-style: normal; color: var(--ink-400); margin-left: 4px; }
+
+.conf__motivos{ background: var(--gold-soft); border-radius: var(--radius-sm); padding: var(--sp-3) var(--sp-4); }
+.conf__motivos strong{
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: var(--text-sm); color: var(--gold-deep);
+}
+.conf__motivos ul{ margin: 7px 0 0; padding-left: 26px; }
+.conf__motivos li{ font-size: var(--text-sm); color: var(--ink-700); margin-bottom: 4px; line-height: 1.5; }
+
+.conf__cartao > footer{ display: flex; gap: var(--sp-2); }
+.conf__aviso-modal{ font-size: var(--text-sm); color: var(--ink-500); margin: -6px 0 var(--sp-2); line-height: 1.5; }
+
+/* ---- mapa da transportadora ---- */
+.conf__mapa{
+  margin-top: var(--sp-5); background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: var(--sp-5); box-shadow: var(--shadow-xs);
+}
+.conf__mapa > header{
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-3); margin-bottom: var(--sp-4);
+}
+.conf__mapa h2{ font-size: var(--text-md); margin-bottom: 2px; }
+.conf__mapa > header p{ font-size: var(--text-sm); color: var(--ink-500); margin: 0; }
+.conf__modo{
+  font-size: 10.5px; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap;
+}
+.conf__modo.is-aprendendo{ background: var(--gold-soft); color: var(--gold-deep); }
+.conf__modo.is-ativo{ background: var(--accent-soft); color: var(--accent); }
+
+.conf__cidades{ display: flex; flex-wrap: wrap; gap: 6px; }
+.conf__cidade{
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 20px; padding: 5px 6px 5px 12px; font-size: var(--text-sm);
+}
+.conf__cidade b{ color: var(--ink-900); font-weight: 600; }
+.conf__cidade em{ font-style: normal; color: var(--ink-400); font-size: 11px; }
+.conf__cidade button{
+  border: none; background: transparent; color: var(--ink-400); cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 0 5px; border-radius: 50%;
+}
+.conf__cidade button:hover{ background: var(--danger-soft); color: var(--danger); }
+.conf__vazio-mapa{ font-size: var(--text-sm); color: var(--ink-400); margin: 0; }
+
+.conf__area{
+  font-size: var(--text-sm); color: var(--ink-500); margin: var(--sp-3) 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.conf__area em{ font-style: normal; color: var(--ink-400); }
+
+.conf__mapa > footer{
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+  margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--line);
+}
+.conf__dica-mapa{ font-size: var(--text-sm); color: var(--ink-400); }

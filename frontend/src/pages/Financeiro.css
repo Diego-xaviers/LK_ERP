@@ -1,0 +1,100 @@
+.fin__head{
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-4); margin-bottom: var(--sp-5);
+}
+.fin__head h1{ font-size: var(--text-xl); margin-bottom: 3px; }
+.fin__head p{ font-size: var(--text-base); color: var(--ink-500); margin: 0; }
+
+.fin__cartoes{
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3); margin-bottom: var(--sp-5);
+}
+.fin__cartao{
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: var(--sp-4) var(--sp-5); box-shadow: var(--shadow-xs);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.fin__cartao span{
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-400); font-weight: 600;
+}
+.fin__cartao strong{
+  font-size: 24px; font-weight: 600; color: var(--ink-900); line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.fin__cartao--saldo{ background: var(--accent-soft); border-color: transparent; }
+.fin__cartao--saldo span{ color: var(--accent); }
+.fin__cartao--saldo strong{ color: var(--accent); }
+.fin__cartao strong.is-devendo{ color: var(--gold-deep); }
+
+.fin__bloco{ margin-bottom: var(--sp-5); }
+.fin__bloco h2{ font-size: var(--text-md); margin-bottom: var(--sp-3); }
+
+.fin__motoristas{ display: flex; flex-direction: column; gap: var(--sp-4); }
+.fin__motorista{
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs); overflow: hidden;
+}
+.fin__motorista > header{
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+}
+.fin__motorista h3{ font-size: var(--text-base); margin-bottom: 2px; }
+.fin__motorista > header span{ font-size: var(--text-sm); color: var(--ink-500); }
+.fin__motorista > header strong{ font-size: var(--text-lg, 18px); color: var(--ink-900); white-space: nowrap; }
+.fin__motorista > footer{
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5); border-top: 1px solid var(--line);
+}
+.fin__sem-saldo{ font-size: var(--text-sm); color: var(--danger); }
+
+.fin__tabela{ width: 100%; border-collapse: collapse; }
+.fin__tabela th{
+  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-400); font-weight: 600; padding: 8px var(--sp-5);
+  background: var(--surface-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.fin__tabela td{
+  padding: 10px var(--sp-5); font-size: var(--text-sm); color: var(--ink-700);
+  border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums;
+}
+.fin__tabela tbody tr:last-child td{ border-bottom: none; }
+.fin__tabela td.is-forte{ font-weight: 600; color: var(--ink-900); }
+.fin__tabela td.is-saida{ color: var(--danger); }
+.fin__tabela td.is-entrada{ color: var(--accent); }
+.fin__tabela em{ font-style: normal; color: var(--accent); }
+
+.fin__extrato{
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-xs); overflow: hidden;
+}
+.fin__tag{
+  display: inline-block; font-size: 10px; font-weight: 600; border-radius: 20px;
+  padding: 2px 8px; margin-right: 7px;
+}
+.fin__tag.is-frete{ background: var(--accent-soft); color: var(--accent); }
+.fin__tag.is-comissao{ background: var(--danger-soft); color: var(--danger); }
+.fin__tag.is-ajuste{ background: var(--surface-2); color: var(--ink-500); }
+
+.fin__resumo-modal{
+  display: flex; gap: var(--sp-5); background: var(--surface-2);
+  border-radius: var(--radius-sm); padding: var(--sp-3) var(--sp-4);
+}
+.fin__resumo-modal span{
+  display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-400); font-weight: 600; margin-bottom: 3px;
+}
+.fin__resumo-modal strong{ font-size: var(--text-base); color: var(--ink-900); }
+.fin__resumo-modal strong.is-forte{ color: var(--accent); font-size: var(--text-md); }
+
+.fin__sentido{ display: flex; gap: var(--sp-2); }
+.fin__sentido button{
+  flex: 1; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink-700);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: var(--text-sm);
+  cursor: pointer; font-family: var(--font-ui);
+}
+.fin__sentido button.is-on{ background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 550; }
+
+@media (max-width: 860px){
+  .fin__cartoes{ grid-template-columns: 1fr; }
+}

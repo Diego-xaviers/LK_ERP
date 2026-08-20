@@ -1,0 +1,20 @@
+.estado{
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--sp-2); padding: var(--sp-8) var(--sp-4);
+  font-size: var(--text-base); color: var(--ink-500); text-align: center;
+}
+.estado__spinner{
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: girar .7s linear infinite;
+}
+@keyframes girar{ to{ transform: rotate(360deg); } }
+
+.estado--erro{ color: var(--danger); }
+.estado--erro button{
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-700);
+  border-radius: var(--radius-sm); padding: 7px 14px; font-size: var(--text-sm);
+  font-weight: 550; cursor: pointer; font-family: var(--font-ui); margin-top: var(--sp-1);
+}
+.estado--vazio strong{ font-size: var(--text-md); font-weight: 600; color: var(--ink-900); }
+.estado--vazio span{ font-size: var(--text-base); color: var(--ink-500); max-width: 380px; }

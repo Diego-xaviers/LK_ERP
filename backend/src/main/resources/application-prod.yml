@@ -1,0 +1,46 @@
+# Perfil de produção — PostgreSQL via variáveis de ambiente.
+#
+# O schema NÃO é criado pelo Hibernate: quem cria é o Flyway, a partir de
+# db/migration. O `validate` abaixo é a rede de segurança — se o banco não
+# bater com as entidades, a aplicação recusa a subir em vez de rodar torta.
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Banco que já existe e ainda não tem histórico do Flyway começa do zero.
+    baseline-on-migrate: true
+    baseline-version: 0
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+jwt:
+  # Sem JWT_SECRET a aplicação não sobe — de propósito: cair no segredo de
+  # desenvolvimento em produção significaria tokens forjáveis por qualquer um.
+  secret: ${JWT_SECRET}
+
+lk:
+  gestor-inicial:
+    email: ${GESTOR_INICIAL_EMAIL:}
+    senha: ${GESTOR_INICIAL_SENHA:}
+    nome: ${GESTOR_INICIAL_NOME:Administrador}
+  # Domínio(s) do painel que podem chamar esta API. Separar por vírgula.
+  origens-permitidas: ${ORIGENS_PERMITIDAS}
+  # URL pública desta API — é o que vai dentro do pacote do agente de telemetria.
+  url-api: ${URL_API}
+  h2-console-liberado: false
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

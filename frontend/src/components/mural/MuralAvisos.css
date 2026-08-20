@@ -1,0 +1,39 @@
+.mural{ display: flex; flex-direction: column; gap: var(--sp-3); }
+
+/* Banner do aviso fixado — faixa de destaque no topo do painel */
+.banner{
+  display: flex; align-items: center; gap: var(--sp-3);
+  border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4);
+  border: 1px solid transparent;
+}
+.banner--evento{ background: var(--accent-soft); border-color: #c9e9d6; }
+.banner--informativo{ background: var(--info-soft); border-color: #d4e4fb; }
+.banner--alerta{ background: var(--gold-soft); border-color: #f5e3a8; }
+
+.banner__icone{ width: 34px; height: 34px; border-radius: var(--radius-sm); display: grid; place-items: center; flex-shrink: 0; background: rgba(255,255,255,.7); }
+.banner--evento .banner__icone{ color: var(--accent); }
+.banner--informativo .banner__icone{ color: var(--info); }
+.banner--alerta .banner__icone{ color: var(--gold-deep); }
+
+.banner__texto{ display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.banner__texto strong{ font-size: var(--text-base); font-weight: 600; }
+.banner__texto span{ font-size: var(--text-sm); color: var(--ink-700); }
+.banner__pin{ color: var(--ink-400); flex-shrink: 0; }
+
+/* Lista do mural */
+.mural__card{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-xs); overflow: hidden; }
+.mural__head{ display: flex; align-items: baseline; justify-content: space-between; padding: var(--sp-4) var(--sp-5) var(--sp-2); }
+.mural__head h2{ font-size: var(--text-md); }
+.mural__sub{ font-size: var(--text-xs); color: var(--ink-400); }
+
+.mural__lista{ list-style: none; margin: 0; padding: 0 var(--sp-5) var(--sp-4); }
+.mural__item{ display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.mural__item:last-child{ border-bottom: none; }
+.mural__icone{ width: 28px; height: 28px; border-radius: var(--radius-sm); display: grid; place-items: center; flex-shrink: 0; }
+.mural__icone--informativo{ background: var(--info-soft); color: var(--info); }
+.mural__icone--alerta{ background: var(--gold-soft); color: var(--gold-deep); }
+.mural__icone--evento{ background: var(--accent-soft); color: var(--accent); }
+.mural__conteudo{ flex: 1; min-width: 0; }
+.mural__conteudo strong{ display: block; font-size: var(--text-base); font-weight: 550; }
+.mural__conteudo p{ margin: 2px 0 0; font-size: var(--text-sm); color: var(--ink-500); }
+.mural__item time{ font-size: var(--text-xs); color: var(--ink-400); white-space: nowrap; }

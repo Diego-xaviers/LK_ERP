@@ -1,0 +1,50 @@
+.frota__header{ margin-bottom: var(--sp-5); }
+.frota__header h1{ font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.021em; margin: 0 0 4px; }
+.frota__header p{ font-size: var(--text-base); color: var(--ink-500); margin: 0; }
+
+.frota__grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-3); }
+
+.frota__card{
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: var(--sp-4); display: flex; flex-direction: column; gap: 6px;
+  box-shadow: var(--shadow-xs);
+}
+.frota__card--manutencao{ border-color: #f0d9b8; }
+
+.frota__card-top{ display: flex; align-items: center; justify-content: space-between; }
+.frota__placa{ font-size: 16px; font-weight: 700; letter-spacing: -0.01em; font-family: var(--font-mono); }
+
+.frota__status{ font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
+.frota__status--ativo{ background: var(--accent-soft); color: var(--accent); }
+.frota__status--manutencao{ background: var(--warning-soft); color: var(--warning); }
+
+.frota__modelo{ font-size: 14px; font-weight: 600; }
+.frota__motorista{ font-size: 12.5px; color: var(--ink-500); }
+.frota__motivo{ display:flex; align-items:center; gap:6px; font-size: 11.5px; color: var(--warning); background: var(--warning-soft); padding: 6px 9px; border-radius: 8px; margin-top: 4px; }
+
+.frota__btn{
+  background: var(--accent); color: white; border: none; border-radius: var(--radius-sm);
+  padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 6px;
+}
+.frota__btn--secondary{ background: var(--surface); color: var(--ink-900); border: 1px solid var(--line-strong); }
+
+.frota__modal-overlay{
+  position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.frota__modal{
+  background: var(--surface); border-radius: var(--radius-lg); padding: var(--sp-5);
+  max-width: 380px; box-shadow: var(--shadow-lg);
+}
+.frota__modal h3{ font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.frota__modal p{ font-size: var(--text-base); color: var(--ink-500); line-height: 1.5; margin: 0 0 var(--sp-4); }
+.frota__modal-actions{ display: flex; gap: 8px; }
+.frota__modal-actions .frota__btn{ flex: 1; margin-top: 0; }
+
+.frota__bloco{ margin-bottom: var(--sp-8); }
+.frota__bloco h2{ font-size: var(--text-md); margin-bottom: var(--sp-3); }
+.frota__linha{ display: flex; gap: 6px; font-size: var(--text-sm); color: var(--ink-400); }
+
+/* De quem é o caminhão: sem dono, é da empresa e qualquer um usa. */
+.frota__dono{ font-size: var(--text-sm); color: var(--ink-400); margin-top: 2px; }
+.frota__dono b{ color: var(--ink-700); font-weight: 600; }

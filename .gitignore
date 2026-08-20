@@ -1,0 +1,27 @@
+# Dependências e build
+node_modules/
+dist/
+target/
+*.tsbuildinfo
+
+# Banco local do H2 (o dev roda em memória; isto é sobra de execução)
+data/
+
+# Segredos — nunca versionar
+.env
+frontend/.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Preferências locais da máquina, não do projeto
+.claude/settings.local.json

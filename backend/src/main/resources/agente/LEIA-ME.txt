@@ -1,0 +1,66 @@
+=====================================================
+  LK Transportes - Agente de Telemetria
+=====================================================
+
+O QUE E ISSO
+------------
+Um programinha que le o que esta acontecendo no seu Euro Truck
+Simulator 2 e manda para o painel da LK: velocidade, combustivel,
+dano, distancia e os abastecimentos. Com ele ligado, sua viagem
+no painel se preenche sozinha enquanto voce dirige.
+
+
+ANTES DE COMECAR
+----------------
+Voce precisa do plugin de telemetria instalado no jogo. Confira se
+existe o arquivo:
+
+  Euro Truck Simulator 2\bin\win_x64\plugins\scs-telemetry.dll
+
+Se nao existir, baixe em:
+  https://github.com/RenCloud/scs-sdk-plugin/releases
+
+e copie o scs-telemetry.dll para a pasta "plugins" acima
+(crie a pasta se ela nao existir).
+
+
+COMO USAR
+---------
+1. Descompacte esta pasta em qualquer lugar (ex.: Documentos).
+   IMPORTANTE: descompacte de verdade, nao rode de dentro do .zip.
+
+2. De dois cliques em  LK-Telemetria.bat
+
+3. Deixe a janela preta aberta enquanto joga. Ela vai mostrar
+   "Enviando - viagem #NNNN" quando estiver tudo certo.
+
+4. Abra o ETS2 e entre na partida. Crie e inicie a viagem no
+   painel da LK normalmente - o agente cuida do resto.
+
+
+TESTAR SE ESTA FUNCIONANDO
+--------------------------
+Com o jogo aberto e dentro de uma partida, rode:
+
+  LK-Telemetria.bat -Diagnostico
+
+Ele mostra uma leitura unica com os dados do seu caminhao.
+
+
+PERGUNTAS COMUNS
+----------------
+"Aguardando o Euro Truck Simulator 2 abrir..."
+   O jogo esta fechado, ou o scs-telemetry.dll nao esta instalado.
+
+"Token invalido"
+   Voce gerou um token novo no painel. Baixe o pacote de novo.
+
+"Conectado, mas sem viagem em andamento"
+   O agente esta ok. Falta iniciar uma viagem no painel.
+
+O Windows bloqueou o arquivo
+   Clique com o botao direito no .bat > Propriedades > Desbloquear.
+
+
+O agente so LE a memoria do jogo e envia para o painel da LK.
+Ele nao modifica o jogo nem o seu save.

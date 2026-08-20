@@ -1,0 +1,43 @@
+# Porta de entrada do sistema: entrega o painel e repassa /api para a API.
+#
+# O Caddy pede e renova o certificado Let's Encrypt sozinho — basta o domínio
+# apontar para o servidor e as portas 80 e 443 estarem abertas.
+#
+# DOMINIO vem do .env. Se for ":80", roda em HTTP sem certificado (útil para
+# testar na VPS antes de o DNS propagar).
+{$DOMINIO} {
+	encode gzip
+
+	# Upload de foto do perfil e da loja passa por aqui.
+	request_body {
+		max_size 12MB
+	}
+
+	# Tudo que começa com /api vai para o backend. Painel e API no mesmo
+	# domínio é o que faz o CORS deixar de existir como problema.
+	handle /api/* {
+		reverse_proxy api:8080 {
+			# O download do agente é um zip montado na hora.
+			transport http {
+				response_header_timeout 120s
+			}
+		}
+	}
+
+	handle /actuator/health {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv
+
+		# Arquivos do build têm hash no nome: podem ser cacheados forte.
+		@comHash path /assets/*
+		header @comHash Cache-Control "public, max-age=31536000, immutable"
+
+		# SPA: rota desconhecida devolve o index e o React resolve.
+		# Sem isso, recarregar em /logistica dá 404.
+		try_files {path} /index.html
+		file_server
+	}
+}

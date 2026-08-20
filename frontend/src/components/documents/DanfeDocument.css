@@ -1,0 +1,80 @@
+.danfe{
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  font-family: var(--font-doc);
+}
+
+.danfe__watermark{
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 0;
+}
+.danfe__watermark span{
+  font-family: var(--font-ui); font-weight: 700; font-size: 30px; color: #c62828; opacity: .1;
+  transform: rotate(-28deg); white-space: nowrap;
+}
+
+.danfe__g{ display: grid; background: var(--line-strong); border: 1px solid var(--line-strong); border-top: none; position: relative; z-index: 1; }
+.danfe__c{ background: var(--paper); padding: 6px 9px 7px; }
+.danfe__c label{ display: block; font-size: 7.2px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-400); margin-bottom: 2px; }
+.danfe__v{ font-size: 11px; font-weight: 600; line-height: 1.3; }
+.danfe__v--sm{ font-weight: 400; font-size: 10px; }
+
+.danfe__section-bar{
+  font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid var(--line-strong); border-top: none; padding: 4px 9px; background: #f1f0ea;
+  color: var(--ink-500); position: relative; z-index: 1;
+}
+
+.danfe__canhoto{ display: grid; grid-template-columns: 1fr 140px; border: 1px solid var(--line-strong); position: relative; z-index: 1; }
+.danfe__canhoto-txt{ padding: 8px 10px; font-size: 9.5px; line-height: 1.55; border-right: 1px solid var(--line-strong); }
+.danfe__canhoto-sub{ display: grid; grid-template-columns: 140px 1fr; margin-top: 8px; border-top: 1px solid var(--line-strong); }
+.danfe__canhoto-sub div{ padding: 4px 8px; font-size: 7px; text-transform: uppercase; color: var(--ink-400); }
+.danfe__canhoto-sub div:first-child{ border-right: 1px solid var(--line-strong); }
+.danfe__canhoto-nfe{ padding: 10px; text-align: right; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.danfe__tag{ font-family: var(--font-ui); font-weight: 700; font-size: 14px; }
+.danfe__num{ font-weight: 700; font-size: 12px; }
+.danfe__serie{ font-size: 9.5px; color: var(--ink-500); }
+
+.danfe__head3{ grid-template-columns: 1.5fr 1fr 1.15fr; border-top: 1px solid var(--line-strong); }
+.danfe__emit-name{ font-weight: 700; font-size: 14px; letter-spacing: -0.01em; margin-bottom: 3px; }
+.danfe__emit-addr{ font-size: 9.5px; color: var(--ink-500); line-height: 1.55; }
+
+.danfe__danfe-col{ display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding-top: 6px; border-left: 1px solid var(--line-strong); border-right: 1px solid var(--line-strong); }
+.danfe__big{ font-family: var(--font-ui); font-weight: 700; font-size: 18px; letter-spacing: .02em; }
+.danfe__sub{ font-size: 7.6px; color: var(--ink-500); line-height: 1.35; margin-bottom: 2px; }
+.danfe__ent-saida{ display: flex; align-items: center; gap: 6px; font-size: 8.5px; font-weight: 600; }
+.danfe__box{ width: 17px; height: 17px; border: 1.5px solid var(--ink-900); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10.5px; }
+
+.danfe__chave-box{ display: flex; flex-direction: column; gap: 4px; }
+.danfe__chave-num{ font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .02em; word-break: break-all; }
+.danfe__barcode{ height: 28px; margin-top: 2px;
+  background: repeating-linear-gradient(90deg, var(--ink-900) 0 1.5px, transparent 1.5px 3px, var(--ink-900) 3px 4px, transparent 4px 7px); }
+.danfe__chave-note{ font-size: 7px; color: var(--ink-500); line-height: 1.4; }
+
+.danfe__g3{ grid-template-columns: 1.4fr 1fr; }
+.danfe__destrow1{ grid-template-columns: 2fr 1fr 1fr; }
+
+.danfe__itens{ width: 100%; border-collapse: collapse; border: 1px solid var(--line-strong); border-top: none; position: relative; z-index: 1; background: var(--paper); }
+.danfe__itens th{ font-size: 7px; text-transform: uppercase; color: var(--ink-500); text-align: left; padding: 5px 6px; background: #f1f0ea; border: 1px solid var(--line-strong); font-weight: 700; }
+.danfe__itens td{ font-size: 10px; padding: 6px 6px; border: 1px solid var(--line-strong); }
+.danfe__itens td.num{ text-align: right; font-variant-numeric: tabular-nums; }
+
+.danfe__status-stamp{
+  display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--ink-400);
+  border: 1.5px solid var(--ink-400); border-radius: 3px; padding: 3px 9px; text-transform: uppercase; letter-spacing: .04em;
+}
+.danfe__status-stamp .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--ink-400); }
+.danfe__status-stamp.is-ok{ color: var(--accent-nfe); border-color: var(--accent-nfe); }
+.danfe__status-stamp.is-ok .dot{ background: var(--accent-nfe); }
+
+/* Aviso obrigatório exigido pela spec — sempre visível, nunca só na marca d'água */
+.doc-aviso{
+  background: #fdefed; color: #c3362b;
+  font-family: var(--font-ui); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase; text-align: center;
+  padding: 5px; border: 1px solid #f2cfc9; border-bottom: none;
+  position: relative; z-index: 2;
+}

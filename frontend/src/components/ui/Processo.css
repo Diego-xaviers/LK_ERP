@@ -1,0 +1,80 @@
+/* Overlay de etapas. z-index acima do modal (60): ele pode nascer de dentro de um. */
+.processo__fundo{
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(18,20,26,.42);
+  display: flex; align-items: center; justify-content: center; padding: var(--sp-4);
+  animation: processo-entra .18s var(--ease);
+}
+
+.processo{
+  background: var(--surface); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--sp-8) var(--sp-6) var(--sp-6);
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-3);
+  text-align: center;
+}
+.processo strong{ font-size: var(--text-md); font-weight: 600; }
+.processo p{ margin: 0; font-size: var(--text-sm); color: var(--ink-500); }
+
+.processo__spinner{
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2.5px solid var(--accent-soft); border-top-color: var(--accent);
+  animation: processo-gira .7s linear infinite;
+}
+
+.processo__icone{
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+}
+.processo__icone--ok{ background: var(--accent-soft); color: var(--accent); }
+.processo__icone--erro{ background: var(--danger-soft); color: var(--danger); }
+
+/* Barra: cresce por etapa e segura em 92% se o servidor demorar mais que a animação. */
+.processo__barra{
+  width: 100%; height: 5px; border-radius: 999px;
+  background: var(--surface-2); overflow: hidden;
+}
+.processo__barra i{
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent);
+  transition: width .5s var(--ease);
+}
+
+.processo__lista{
+  list-style: none; margin: var(--sp-1) 0 0; padding: 0;
+  width: 100%; display: flex; flex-direction: column; gap: 5px;
+}
+.processo__lista li{
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--text-xs); color: var(--ink-400);
+  transition: color .2s var(--ease);
+}
+.processo__lista li.is-feito{ color: var(--accent); }
+.processo__lista li.is-atual{ color: var(--ink-700); font-weight: 500; }
+
+.processo__ponto{
+  width: 12px; height: 12px; display: inline-block;
+  border-radius: 50%; border: 1.5px solid currentColor; opacity: .5;
+}
+.processo__lista li.is-atual .processo__ponto{
+  opacity: 1; border-color: var(--accent);
+  animation: processo-pulsa 1s var(--ease) infinite;
+}
+
+.processo .btn{ margin-top: var(--sp-2); }
+
+@keyframes processo-gira{ to{ transform: rotate(360deg); } }
+@keyframes processo-entra{ from{ opacity: 0; } to{ opacity: 1; } }
+@keyframes processo-pulsa{
+  0%, 100%{ box-shadow: 0 0 0 0 var(--accent-ring); }
+  50%{ box-shadow: 0 0 0 4px var(--accent-ring); }
+}
+
+/* Quem pediu menos movimento não leva animação nenhuma — só o conteúdo. */
+@media (prefers-reduced-motion: reduce){
+  .processo__fundo{ animation: none; }
+  .processo__spinner{ animation-duration: 2s; }
+  .processo__barra i{ transition: none; }
+  .processo__lista li.is-atual .processo__ponto{ animation: none; }
+}

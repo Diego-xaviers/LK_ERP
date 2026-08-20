@@ -1,0 +1,197 @@
+.viagem{ max-width: 780px; }
+
+/* ---------- Hero: a viagem ativa domina a tela ---------- */
+.viagem__hero{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-4);
+  box-shadow: var(--shadow-xs);
+}
+.viagem__hero-top{ display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+.viagem__numero{ font-size: var(--text-sm); font-weight: 600; color: var(--ink-400); letter-spacing: .02em; }
+.viagem__status{
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--text-xs); font-weight: 600; color: var(--accent);
+  background: var(--accent-soft); padding: 4px 10px; border-radius: 20px;
+}
+.viagem__status-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+.viagem__rota{
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+  font-size: 27px; font-weight: 600; letter-spacing: -0.026em;
+  margin-bottom: var(--sp-5);
+}
+.viagem__rota svg{ color: var(--ink-400); }
+
+.viagem__meta{ display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin: 0; }
+.viagem__meta dt{ font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-400); font-weight: 600; margin-bottom: 3px; }
+.viagem__meta dd{ margin: 0; font-size: var(--text-base); color: var(--ink-700); }
+
+/* ---------- Ações grandes ---------- */
+.viagem__acoes{
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2); margin-bottom: var(--sp-4);
+}
+.acao{
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: var(--sp-4) var(--sp-2);
+  font-size: var(--text-sm); font-weight: 550; color: var(--ink-700);
+  cursor: pointer; box-shadow: var(--shadow-xs);
+  transition: border-color .14s var(--ease), transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+.acao:hover{ border-color: var(--accent); color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.acao__icone{
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--ink-500);
+  display: grid; place-items: center;
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.acao:hover .acao__icone{ background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- Timeline ---------- */
+.viagem__timeline-card{
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-xs);
+  margin-bottom: var(--sp-4); overflow: hidden;
+}
+.viagem__timeline-head{
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5) var(--sp-3);
+}
+.viagem__timeline-head h2{ font-size: var(--text-md); }
+.viagem__total{ font-size: var(--text-sm); color: var(--ink-500); }
+.viagem__total strong{ color: var(--ink-900); font-weight: 600; }
+.viagem__vazio{ padding: 0 var(--sp-5) var(--sp-5); font-size: var(--text-base); color: var(--ink-400); margin: 0; }
+
+.timeline{ list-style: none; margin: 0; padding: 0 var(--sp-5) var(--sp-4); }
+.timeline__item{
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+  font-size: var(--text-base);
+}
+.timeline__item:last-child{ border-bottom: none; }
+.timeline__marker{ width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--ink-400); }
+.timeline__marker--abastecimento{ background: var(--info); }
+.timeline__marker--manutencao{ background: var(--warning); }
+.timeline__marker--pedagio{ background: var(--ink-400); }
+.timeline__marker--multa{ background: var(--danger); }
+.timeline__marker--ocorrencia{ background: #7a5bc7; }
+.timeline__hora{ font-size: var(--text-sm); color: var(--ink-400); font-variant-numeric: tabular-nums; }
+.timeline__desc{ flex: 1; color: var(--ink-700); }
+.timeline__valor{ font-weight: 550; font-variant-numeric: tabular-nums; }
+
+/* ---------- Finalizar (ação discreta, como pede a spec) ---------- */
+.viagem__finalizar{
+  display: inline-flex; align-items: center; gap: 7px;
+  background: transparent; border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); padding: 9px 16px;
+  font-size: var(--text-sm); font-weight: 550; color: var(--ink-500); cursor: pointer;
+}
+.viagem__finalizar:hover{ border-color: var(--ink-400); color: var(--ink-900); background: var(--surface); }
+
+/* ---------- Modal ---------- */
+.modal__overlay{
+  position: fixed; inset: 0; background: rgba(18,20,26,.32);
+  display: flex; align-items: center; justify-content: center; z-index: 60; padding: var(--sp-4);
+}
+.modal{
+  background: var(--surface); border-radius: var(--radius-md);
+  padding: var(--sp-5); width: 100%; max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.modal h3{ font-size: var(--text-md); }
+.modal__hint{ font-size: var(--text-xs); color: var(--ink-400); margin: -4px 0 0; }
+.modal__acoes{ display: flex; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-2); }
+
+.campo{ display: flex; flex-direction: column; gap: 5px; }
+.campo > span{ font-size: var(--text-sm); font-weight: 500; color: var(--ink-500); }
+.campo input, .campo select, .campo textarea{
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: var(--text-base); font-family: var(--font-ui);
+  background: var(--surface-2); color: var(--ink-900); resize: vertical;
+}
+.campo input:focus, .campo select:focus, .campo textarea:focus{
+  outline: none; border-color: var(--accent); background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.campo--inline{ flex-direction: row; align-items: center; gap: 8px; font-size: var(--text-base); }
+.campo--curto{ max-width: 150px; }
+.campo-linha{ display: flex; gap: var(--sp-3); }
+.campo-linha .campo{ flex: 1; }
+
+.calc{
+  background: var(--accent-soft); border-radius: var(--radius-sm);
+  padding: 10px 14px; font-size: var(--text-base); color: var(--accent);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.calc strong{ font-size: var(--text-md); font-weight: 600; }
+
+.btn{
+  border: none; background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); padding: 9px 18px;
+  font-size: var(--text-sm); font-weight: 550; cursor: pointer;
+}
+.btn:hover{ background: var(--accent-hover); }
+.btn--ghost{ background: transparent; color: var(--ink-500); border: 1px solid var(--line-strong); }
+.btn--ghost:hover{ background: var(--surface-2); color: var(--ink-900); }
+
+/* ---------- Celular: segunda tela enquanto joga ---------- */
+@media (max-width: 700px){
+  .viagem__rota{ font-size: 21px; }
+  .viagem__meta{ grid-template-columns: 1fr; gap: var(--sp-3); }
+  .viagem__acoes{ grid-template-columns: repeat(2, 1fr); }
+  .acao{ flex-direction: row; justify-content: flex-start; padding: var(--sp-3) var(--sp-4); gap: var(--sp-3); }
+  .acao__icone{ width: 34px; height: 34px; }
+  .campo-linha{ flex-direction: column; }
+  .campo--curto{ max-width: none; }
+}
+
+.modal__erro{
+  background: var(--danger-soft); color: var(--danger);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: var(--text-sm); font-weight: 500;
+}
+
+/* Lista de credenciados vazia: diz onde cadastrar em vez de deixar o select mudo. */
+.modal__dica{
+  margin: -2px 0 0; font-size: var(--text-xs); color: var(--ink-400); line-height: 1.5;
+}
+.modal__dica a{ color: var(--accent); font-weight: 600; }
+
+.sigpad{ border: 1.5px dashed var(--line-strong); border-radius: var(--radius-sm); background: #fdfdfc; overflow: hidden; }
+.sigpad__canvas{ width: 100%; height: 140px; display: block; cursor: crosshair; touch-action: none; }
+.sigpad__footer{ display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 10px; border-top: 1px solid var(--line); background: var(--surface); }
+.sigpad__hint{ font-size: 11px; color: var(--ink-400); }
+.sigpad__clear{ border: none; background: transparent; color: var(--danger);
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-ui); }
+
+/* Viagem pega mas ainda não iniciada */
+.viagem__aguardando{
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: var(--sp-6, 32px) var(--sp-5); box-shadow: var(--shadow-xs); max-width: 640px;
+}
+.viagem__aguardando-selo{
+  display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; background: var(--gold-soft); color: var(--gold-deep);
+  border-radius: 20px; padding: 4px 11px; margin-bottom: var(--sp-3);
+}
+.viagem__aguardando h1{ font-size: var(--text-xl); margin-bottom: 4px; }
+.viagem__aguardando > p{ font-size: var(--text-base); color: var(--ink-500); margin: 0 0 var(--sp-4); }
+.viagem__aguardando-dados{
+  display: flex; flex-wrap: wrap; gap: var(--sp-5); margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4); background: var(--surface-2); border-radius: var(--radius-sm);
+}
+.viagem__aguardando-dados dt{
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-400); font-weight: 600; margin-bottom: 2px;
+}
+.viagem__aguardando-dados dd{ font-size: var(--text-base); color: var(--ink-900); margin: 0; font-weight: 550; }
+.viagem__aguardando-dica{
+  font-size: var(--text-sm); color: var(--ink-500); line-height: 1.55;
+  background: var(--accent-soft); border-radius: var(--radius-sm); padding: 10px 13px; margin: 0 0 var(--sp-4);
+}
+.viagem__aguardando-acoes{ display: flex; gap: var(--sp-2); flex-wrap: wrap; }

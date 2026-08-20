@@ -1,0 +1,79 @@
+# LK Transportes — tudo num servidor só.
+#
+# Sobe três containers numa VPS: banco, API e painel. O painel (Caddy) é a
+# única coisa exposta à internet: ele entrega o site, repassa /api para a API
+# e cuida do certificado HTTPS sozinho.
+#
+#   cp .env.exemplo .env && nano .env
+#   docker compose up -d --build
+
+services:
+  banco:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lktransportes}
+      POSTGRES_USER: ${POSTGRES_USER:-lk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - dados_postgres:/var/lib/postgresql/data
+    # A API só sobe depois que o banco aceitar conexão, senão o Flyway falha.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lk} -d ${POSTGRES_DB:-lktransportes}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Sem "ports": o banco não fica exposto na internet, só na rede interna.
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      banco:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://banco:5432/${POSTGRES_DB:-lktransportes}
+      DATABASE_USER: ${POSTGRES_USER:-lk}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      # Painel e API no mesmo domínio — o Caddy faz o repasse.
+      ORIGENS_PERMITIDAS: ${URL_PUBLICA}
+      # É o endereço que vai dentro do pacote do agente de telemetria.
+      URL_API: ${URL_PUBLICA}/api
+      GESTOR_INICIAL_EMAIL: ${GESTOR_INICIAL_EMAIL:-}
+      GESTOR_INICIAL_SENHA: ${GESTOR_INICIAL_SENHA:-}
+      GESTOR_INICIAL_NOME: ${GESTOR_INICIAL_NOME:-Administrador}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      # A JVM leva alguns segundos para subir; sem isso o container seria
+      # marcado como doente antes mesmo de terminar de iniciar.
+      start_period: 90s
+
+  painel:
+    build:
+      context: ./frontend
+      args:
+        # Caminho relativo: o painel chama a própria origem, sem CORS.
+        VITE_API_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Domínio para o Caddy emitir o certificado. Use ":80" para testar sem HTTPS.
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Guarda os certificados: sem isso, cada restart pede tudo de novo e
+      # o Let's Encrypt tem limite de emissões por semana.
+      - certificados:/data
+      - config_caddy:/config
+
+volumes:
+  dados_postgres:
+  certificados:
+  config_caddy:

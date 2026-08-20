@@ -1,0 +1,19 @@
+# Normaliza a linha no repositório; cada máquina recebe o que usa.
+* text=auto
+
+# Estes rodam no Linux (Docker e VPS) e QUEBRAM com CRLF —
+# "bad interpreter: /bin/sh^M". Ficam LF em qualquer sistema.
+*.sh          text eol=lf
+mvnw          text eol=lf
+Dockerfile    text eol=lf
+Caddyfile     text eol=lf
+*.yml         text eol=lf
+
+# Este é do Windows e precisa de CRLF.
+*.cmd         text eol=crlf
+*.bat         text eol=crlf
+
+# Binários: git não mexe.
+*.png binary
+*.jpg binary
+*.ico binary

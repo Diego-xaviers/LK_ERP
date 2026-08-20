@@ -1,0 +1,27 @@
+.login{
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); padding: var(--sp-4);
+}
+.login__cartao{
+  width: 100%; max-width: 380px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); padding: var(--sp-6, 32px);
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+.login__marca{ display: flex; align-items: center; gap: 11px; margin-bottom: var(--sp-2); }
+.login__logo{
+  width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: #fff;
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; letter-spacing: .04em;
+}
+.login__marca strong{ display: block; font-size: var(--text-md); }
+.login__marca span{ font-size: var(--text-sm); color: var(--ink-500); }
+
+.login__entrar{ justify-content: center; margin-top: var(--sp-2); padding: 11px 16px; }
+.login__erro{
+  background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: var(--text-sm); font-weight: 500;
+}
+.login__nota{
+  font-size: var(--text-sm); color: var(--ink-400); text-align: center;
+  margin: 0; padding-top: var(--sp-2); border-top: 1px solid var(--line);
+}
