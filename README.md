@@ -473,10 +473,10 @@ dentro do `lk-telemetria.json` do pacote.
   litro, então o evento entra sem custo e precisa ser editado à mão)
 - Comprovante de abastecimento no formato de notinha térmica
 - Upload de screenshot em multas e ocorrências (o campo já existe no modelo)
-- Mais testes automatizados. Existe um só (`AbatimentoDaDemandaTest`, roda com
-  `./mvnw test`), cobrindo a regra de abatimento da demanda. Faltam os outros
-  pontos de dinheiro e permissão: cálculo da comissão, acerto que não paga
-  duas vezes, caixa que não fica negativo, e o `exigirDonoOuGestor`.
+- Mais testes automatizados. São 31 hoje (`./mvnw test`), cobrindo abatimento de
+  demanda, comissão e acerto, conferência e autorização. Faltam a telemetria
+  (ingestão do ping, detecção de abastecimento e avaria), o aprendizado do mapa
+  e a CNH (prazo, pontos, bloqueio).
 
 ## Produção
 
