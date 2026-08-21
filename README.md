@@ -473,10 +473,9 @@ dentro do `lk-telemetria.json` do pacote.
   litro, então o evento entra sem custo e precisa ser editado à mão)
 - Comprovante de abastecimento no formato de notinha térmica
 - Upload de screenshot em multas e ocorrências (o campo já existe no modelo)
-- Mais testes automatizados. São 31 hoje (`./mvnw test`), cobrindo abatimento de
-  demanda, comissão e acerto, conferência e autorização. Faltam a telemetria
-  (ingestão do ping, detecção de abastecimento e avaria), o aprendizado do mapa
-  e a CNH (prazo, pontos, bloqueio).
+- Testes de tela. O backend tem 64 (`./mvnw test`) cobrindo demanda, comissão e
+  acerto, conferência, autorização, telemetria, mapa e CNH; o frontend não tem
+  nenhum.
 
 ## Produção
 
