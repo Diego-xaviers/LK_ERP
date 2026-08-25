@@ -477,6 +477,55 @@ dentro do `lk-telemetria.json` do pacote.
   acerto, conferência, autorização, telemetria, mapa e CNH; o frontend não tem
   nenhum.
 
+## Modo demo — pôr no ar rápido, sem VPS
+
+Para a equipe testar sem contratar nada. Sobe **o sistema inteiro num processo
+só**: painel, API e banco.
+
+```bash
+cp .env.demo.exemplo .env.demo    # preencha JWT_SECRET e a senha do gestor
+./demo.sh                          # http://localhost:8080
+```
+
+O que faz a coisa ser simples é o backend servir o painel. Um endereço só
+significa **um túnel só, CORS nenhum e uma URL só** dentro do pacote do agente
+de telemetria — era a separação em dois serviços que obrigava a ter domínio e
+servidor.
+
+O banco é H2 **em arquivo** (`backend/dados/`), em modo PostgreSQL e com as
+mesmas migrações do Flyway da produção: os dados sobrevivem a reiniciar, e o que
+for testado aqui vale lá. Para começar do zero, apague a pasta.
+
+Não há usuário semeado, diferente do `dev`: aquele cria conta com senha `123456`
+e nunca sai da máquina de quem programa. O demo fica exposto na internet, e ali
+essa conta seria a porta destrancada — o gestor nasce do `GESTOR_INICIAL_*`.
+
+### Deixando acessível de fora
+
+Com [cloudflared](https://github.com/cloudflare/cloudflared) (sem conta, sem
+cartão, sem domínio):
+
+```bash
+cloudflared tunnel --url http://localhost:8080
+```
+
+Ele devolve um `https://algo.trycloudflare.com`. **Suba o sistema apontando para
+esse endereço**, senão o agente dos motoristas procura o servidor no lugar errado:
+
+```bash
+./demo.sh https://algo.trycloudflare.com
+```
+
+Duas coisas para contar à equipe antes:
+
+- **A máquina que roda o `demo.sh` é o servidor.** Fechou o terminal, caiu para
+  todo mundo.
+- **O endereço muda a cada vez que o túnel sobe.** Como ele vai dentro do pacote
+  do agente, cada motorista precisa baixar o agente de novo quando isso
+  acontecer. Para uma rodada combinada não incomoda; para semanas, vale a VPS.
+
+---
+
 ## Produção
 
 ### Opção A — tudo num servidor só (recomendado)
