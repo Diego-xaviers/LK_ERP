@@ -79,7 +79,13 @@ public class SecurityConfig {
                             "/api/carretas/**", "/api/empresas/**", "/api/avisos/**",
                             "/api/caminhoes/**").hasRole("GESTOR")
 
-                    .anyRequest().authenticated();
+                    // Toda a API exige token. O que sobra é o painel — index,
+                    // assets e as rotas que só existem dentro do React — servido
+                    // pelo próprio backend no modo demo. Página é pública por
+                    // definição: quem protege os dados é o /api logo acima, e é
+                    // no login que o painel vira alguma coisa.
+                    .requestMatchers("/api/**").authenticated()
+                    .anyRequest().permitAll();
             })
             // Sem token, ou com token vencido, a resposta é 401 — não 403.
             // O painel derruba a sessão e volta pro login em cima do 401; com o

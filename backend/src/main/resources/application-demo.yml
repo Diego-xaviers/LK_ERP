@@ -1,0 +1,52 @@
+# Perfil de demonstração — para rodar o sistema inteiro num processo só,
+# a partir de uma máquina qualquer, sem VPS e sem banco instalado.
+#
+# É o modo para pôr o painel no ar rápido e deixar a equipe testar. Diferenças
+# para o `dev`:
+#   - o banco é H2 em ARQUIVO, então os dados sobrevivem a reiniciar o servidor;
+#   - roda em modo PostgreSQL com as MESMAS migrações do Flyway da produção,
+#     então o que for testado aqui vale lá;
+#   - não semeia usuário com senha fraca: o gestor nasce das variáveis de
+#     ambiente, porque este perfil fica exposto na internet.
+spring:
+  datasource:
+    url: jdbc:h2:file:./dados/lktransportes;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      # Quem cria o schema é o Flyway. O validate recusa subir se o banco e as
+      # entidades divergirem — a mesma rede de segurança da produção.
+      ddl-auto: validate
+    open-in-view: false
+
+jwt:
+  secret: ${JWT_SECRET}
+
+lk:
+  gestor-inicial:
+    email: ${GESTOR_INICIAL_EMAIL:}
+    senha: ${GESTOR_INICIAL_SENHA:}
+    nome: ${GESTOR_INICIAL_NOME:Administrador}
+  # Painel e API saem do mesmo processo e do mesmo endereço, então não há origem
+  # cruzada. Fica preenchido só para o caso de alguém abrir o painel de fora.
+  origens-permitidas: ${ORIGENS_PERMITIDAS:*}
+  # Endereço público desta API — é o que vai dentro do pacote do agente de
+  # telemetria. Com túnel, é a URL que o túnel devolveu.
+  url-api: ${URL_API:http://localhost:8080/api}
+  h2-console-liberado: false
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

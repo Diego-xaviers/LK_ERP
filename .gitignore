@@ -25,3 +25,11 @@ Thumbs.db
 
 # Preferências locais da máquina, não do projeto
 .claude/settings.local.json
+
+# Build do painel copiado para dentro do backend (modo demo)
+backend/src/main/resources/static/
+# Banco em arquivo do modo demo
+backend/dados/
+
+# Segredos do modo demo
+.env.demo

@@ -22,7 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
  * runner não faz mais nada, mesmo que as variáveis continuem definidas.
  */
 @Configuration
-@Profile("prod")
+@Profile({"prod", "demo"})
 public class PrimeiroGestor {
 
     private static final Logger log = LoggerFactory.getLogger(PrimeiroGestor.class);
