@@ -13,10 +13,6 @@ RUN mvn -q clean package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Não roda como root.
-RUN useradd --system --uid 1001 lk
-USER lk
-
 COPY --from=build /app/target/*.jar app.jar
 
 # A porta real vem de PORT (Railway, Render e afins injetam essa variável).
