@@ -39,6 +39,7 @@ async function varrerHistorico() {
     let achados = 0;
 
     for (const msg of ordenadas) {
+      if (msg.author?.id === client.user.id) continue;   // não relê o que ele mesmo escreveu
       const texto = textoDaMensagem(msg);
       const jobId = extrairJobId(texto);
       console.log(
@@ -47,7 +48,8 @@ async function varrerHistorico() {
       );
       if (jobId) {
         achados++;
-        await processarJob(jobId, canal);
+        // Calado: recuperar histórico não pode reavisar o canal inteiro.
+        await processarJob(jobId, canal, true);
       }
     }
     console.log(`[hist] varredura concluída — ${achados} job(s) encontrado(s)`);
@@ -58,6 +60,9 @@ async function varrerHistorico() {
 
 client.on('messageCreate', async (msg) => {
   if (msg.channelId !== VTLOG_CHANNEL_ID) return;
+  // Os avisos do próprio bot citam o número do job, e sem isto ele os lê como
+  // se fossem anúncios de entrega — realimentando o que ele mesmo escreveu.
+  if (msg.author?.id === client.user.id) return;
 
   const texto = textoDaMensagem(msg);
 
@@ -113,7 +118,10 @@ function extrairJobId(texto) {
   return match ? (match[1] || match[2] || match[3]) : null;
 }
 
-async function processarJob(jobId, canal) {
+/** Motoristas que já foram avisados, para não repetir o aviso a cada entrega. */
+const jaAvisados = new Set();
+
+async function processarJob(jobId, canal, silencioso = false) {
   try {
     // 1. Busca dados completos na API pública do VTLog
     const jobUrl = `https://api.vtlog.net/v1/jobs/${jobId}`;
@@ -179,10 +187,21 @@ async function processarJob(jobId, canal) {
       console.log(`[VTLog] Job ${jobId} já registrado anteriormente.`);
     } else {
       console.error(`[VTLog] Erro ao registrar job ${jobId}: ${JSON.stringify(resposta)}`);
-      // Avisa no canal se o motorista não tem Steam ID configurado
-      if (resposta.erro && resposta.erro.includes('Steam ID')) {
+
+      // Avisa no canal que o motorista não está cadastrado — no máximo uma vez
+      // por motorista, e nunca durante a varredura de histórico.
+      //
+      // Sem esses dois freios o canal vira spam: a varredura relê 50 mensagens
+      // a cada restart e reavisaria tudo de novo, várias vezes pelo mesmo
+      // motorista. O aviso é para alguém agir, e um aviso repetido 30 vezes
+      // não faz ninguém agir mais rápido — só esconde o resto da conversa.
+      const semCadastro = resposta.erro?.includes('Steam ID');
+      if (semCadastro && !silencioso && !jaAvisados.has(job.steam_id)) {
+        jaAvisados.add(job.steam_id);
         await canal.send(
-          `⚠️ Entrega do job #${jobId} detectada, mas o motorista (Steam ID \`${job.steam_id}\`) não está cadastrado no sistema LK. Configure o Steam ID no perfil.`
+          `⚠️ Entrega detectada (job #${jobId}), mas o Steam ID \`${job.steam_id}\` ` +
+          `não está cadastrado no sistema LK. Configure no perfil do motorista — ` +
+          `as entregas anteriores entram sozinhas depois disso.`
         ).catch(() => {});
       }
     }
