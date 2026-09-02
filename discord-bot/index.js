@@ -15,10 +15,46 @@ if (!DISCORD_TOKEN || !VTLOG_CHANNEL_ID || !LK_API_URL || !VTLOG_SECRET) {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`Bot conectado como ${client.user.tag}`);
   console.log(`Monitorando canal ${VTLOG_CHANNEL_ID}`);
+  await varrerHistorico();
 });
+
+/**
+ * Lê o que já está no canal e registra o que ainda não entrou.
+ *
+ * Existe porque o bot só enxerga o que chega enquanto está de pé: sem isso,
+ * toda entrega feita durante um deploy ou uma queda ficaria perdida. O backend
+ * recusa job repetido (409), então repassar o histórico é seguro.
+ */
+async function varrerHistorico() {
+  try {
+    const canal = await client.channels.fetch(VTLOG_CHANNEL_ID);
+    const mensagens = await canal.messages.fetch({ limit: 50 });
+    console.log(`[hist] ${mensagens.size} mensagens recentes no canal`);
+
+    // Da mais antiga para a mais nova, para as viagens saírem na ordem certa.
+    const ordenadas = [...mensagens.values()].reverse();
+    let achados = 0;
+
+    for (const msg of ordenadas) {
+      const texto = textoDaMensagem(msg);
+      const jobId = extrairJobId(texto);
+      console.log(
+        `[hist] autor=${msg.author?.tag ?? '?'} webhook=${!!msg.webhookId} ` +
+        `embeds=${msg.embeds?.length ?? 0} chars=${texto.length} job=${jobId ?? '-'}`
+      );
+      if (jobId) {
+        achados++;
+        await processarJob(jobId, canal);
+      }
+    }
+    console.log(`[hist] varredura concluída — ${achados} job(s) encontrado(s)`);
+  } catch (err) {
+    console.error('[hist] falhou:', err.message);
+  }
+}
 
 client.on('messageCreate', async (msg) => {
   if (msg.channelId !== VTLOG_CHANNEL_ID) return;
