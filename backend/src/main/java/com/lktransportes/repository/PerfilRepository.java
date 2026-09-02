@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface PerfilRepository extends JpaRepository<Perfil, UUID> {
     Optional<Perfil> findByUsuarioId(UUID usuarioId);
+    Optional<Perfil> findBySteamId(String steamId);
 }

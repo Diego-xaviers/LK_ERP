@@ -39,7 +39,6 @@ public class Usuario {
     private java.math.BigDecimal valorKmComissao;
 
     /** Segredo que o agente de telemetria usa para se identificar. Nulo até o motorista gerar. */
-
     @Column(name = "token_telemetria", unique = true, length = 64)
     private String tokenTelemetria;
 

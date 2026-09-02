@@ -33,6 +33,8 @@ lk:
   origens-permitidas: ${ORIGENS_PERMITIDAS:*}
   # URL pública desta API — é o que vai dentro do pacote do agente de telemetria.
   url-api: ${URL_API:}
+  # Segredo compartilhado com o bot do Discord para registrar entregas VTLog.
+  vtlog-secret: ${VTLOG_SECRET:}
   h2-console-liberado: false
 
 server:

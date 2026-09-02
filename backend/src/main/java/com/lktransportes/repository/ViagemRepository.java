@@ -56,6 +56,9 @@ public interface ViagemRepository extends JpaRepository<Viagem, UUID> {
 
     List<Viagem> findByDemandaIdOrderByCriadaEmDesc(UUID demandaId);
 
+    Optional<Viagem> findFirstByMotoristaIdOrderByNumeroDesc(UUID motoristaId);
+    Optional<Viagem> findByVtlogJobId(String vtlogJobId);
+
     /** Peso em curso de várias demandas de uma vez, pra não fazer N consultas na listagem. */
     @Query("""
            select v.demanda.id, coalesce(sum(v.pesoKg), 0) from Viagem v

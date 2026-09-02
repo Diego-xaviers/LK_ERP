@@ -87,6 +87,10 @@ public class Viagem {
     @Column(name = "observacao_final", length = 1000)
     private String observacaoFinal;
 
+    /** Job ID do VTLog que originou esta viagem. Nulo em viagens manuais. */
+    @Column(name = "vtlog_job_id", unique = true, length = 20)
+    private String vtlogJobId;
+
     @Column(name = "houve_avaria")
     private Boolean houveAvaria;
 
@@ -177,10 +181,14 @@ public class Viagem {
     public Demanda getDemanda() { return demanda; }
     public void setDemanda(Demanda d) { this.demanda = d; }
     public StatusViagem getStatus() { return status; }
+    public void setStatus(StatusViagem s) { this.status = s; }
     public LocalDateTime getCriadaEm() { return criadaEm; }
     public LocalDateTime getIniciadaEm() { return iniciadaEm; }
     public LocalDateTime getFinalizadaEm() { return finalizadaEm; }
+    public void setFinalizadaEm(LocalDateTime v) { this.finalizadaEm = v; }
     public String getObservacaoFinal() { return observacaoFinal; }
+    public String getVtlogJobId() { return vtlogJobId; }
+    public void setVtlogJobId(String v) { this.vtlogJobId = v; }
     public Boolean getHouveAvaria() { return houveAvaria; }
     public List<EventoViagem> getEventos() { return eventos; }
     public Pagamento getPagamento() { return pagamento; }

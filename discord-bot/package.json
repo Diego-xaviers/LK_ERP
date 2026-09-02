@@ -1,0 +1,16 @@
+{
+  "name": "lk-vtlog-bot",
+  "version": "1.0.0",
+  "description": "Bot que monitora o #registro-vtlog e registra entregas no sistema LK",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
