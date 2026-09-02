@@ -23,25 +23,57 @@ client.once('ready', () => {
 client.on('messageCreate', async (msg) => {
   if (msg.channelId !== VTLOG_CHANNEL_ID) return;
 
-  // VTLog posta via webhook/app — filtra por embeds
-  if (!msg.embeds || msg.embeds.length === 0) return;
+  const texto = textoDaMensagem(msg);
 
-  for (const embed of msg.embeds) {
-    const jobId = extrairJobId(embed);
-    if (!jobId) continue;
+  // Toda mensagem do canal é registrada. Sem isso, "não detectou nada" e "não
+  // consegue ler nada" produzem o mesmo silêncio nos logs — e são problemas
+  // completamente diferentes.
+  console.log(
+    `[msg] autor=${msg.author?.tag ?? '?'} webhook=${!!msg.webhookId} ` +
+    `embeds=${msg.embeds?.length ?? 0} chars=${texto.length}`
+  );
 
-    console.log(`[VTLog] Job detectado: #${jobId}`);
-    await processarJob(jobId, msg.channel);
+  if (texto.length === 0) {
+    console.warn(
+      '[msg] mensagem chegou vazia (sem texto e sem embeds). Quase sempre é o ' +
+      'Message Content Intent desligado no Developer Portal, ou o bot sem ' +
+      'permissão de ler o histórico do canal.'
+    );
+    return;
   }
+
+  const jobId = extrairJobId(texto);
+  if (!jobId) {
+    console.log(`[msg] nenhum job reconhecido. Trecho: ${texto.slice(0, 300)}`);
+    return;
+  }
+
+  console.log(`[VTLog] Job detectado: #${jobId}`);
+  await processarJob(jobId, msg.channel);
 });
 
 /**
- * Extrai o job_id do embed do VTLog.
- * O título costuma ser: "Entregue • Trabalho #123456"
+ * Junta tudo que dá para ler numa mensagem: conteúdo, e cada pedaço do embed
+ * (inclusive os fields, que é onde o VTLog costuma pôr os dados da entrega).
  */
-function extrairJobId(embed) {
-  const textos = [embed.title, embed.description, embed.footer?.text].filter(Boolean).join(' ');
-  const match = textos.match(/[Tt]rabalho\s*#?(\d{4,8})|[Jj]ob\s*#?(\d{4,8})|#(\d{4,8})/);
+function textoDaMensagem(msg) {
+  const partes = [msg.content];
+  for (const e of msg.embeds ?? []) {
+    partes.push(e.title, e.description, e.url, e.footer?.text, e.author?.name);
+    for (const f of e.fields ?? []) partes.push(f.name, f.value);
+  }
+  return partes.filter(Boolean).join(' \n ');
+}
+
+/**
+ * Acha o número do job. A URL do VTLog é a pista mais confiável — o texto
+ * visível muda com o idioma do servidor, o link não.
+ */
+function extrairJobId(texto) {
+  const porUrl = texto.match(/vtlog\.net\/(?:jobs?|job)\/(\d{3,10})/i);
+  if (porUrl) return porUrl[1];
+
+  const match = texto.match(/[Tt]rabalho\s*#?(\d{4,8})|[Jj]ob\s*#?(\d{4,8})|#(\d{4,8})/);
   return match ? (match[1] || match[2] || match[3]) : null;
 }
 
