@@ -122,7 +122,14 @@ async function processarJob(jobId, canal) {
       console.warn(`[VTLog] Job ${jobId} não encontrado na API (${jobRes.status})`);
       return;
     }
-    const job = await jobRes.json();
+    // A API alterna entre devolver o job dentro de "data" e devolvê-lo na raiz.
+    // Fixar em uma das formas quebra de forma intermitente, então aceita as duas.
+    const cru = await jobRes.json();
+    const job = cru?.data ?? cru;
+    if (!job?.job_id) {
+      console.warn(`[VTLog] Job ${jobId} veio em formato inesperado, ignorando.`);
+      return;
+    }
 
     // Filtra apenas entregas da nossa VTC
     if (String(job.vtc_id) !== String(VTC_ID)) {
@@ -130,20 +137,26 @@ async function processarJob(jobId, canal) {
       return;
     }
 
+    // Job cancelado não é entrega: viraria uma viagem que nunca aconteceu.
+    if (job.job_status !== 'delivered') {
+      console.log(`[VTLog] Job ${jobId} está "${job.job_status}", ignorando.`);
+      return;
+    }
+
     // Monta payload para o backend
     const payload = {
       job_id: String(jobId),
       steam_id: String(job.steam_id),
-      origem: job.source_city || job.start_city || 'Desconhecido',
-      destino: job.destination_city || job.end_city || 'Desconhecido',
-      empresa_origem: job.source_company || job.cargo_company || 'Desconhecido',
-      empresa_destino: job.destination_company || 'Desconhecido',
-      carga: job.cargo || 'Carga desconhecida',
-      peso_kg: job.cargo_mass ? Number(job.cargo_mass) : null,
-      distancia_km: job.distance_client ? Number(job.distance_client) : null,
-      combustivel_gasto_l: job.fuel_used ? Number(job.fuel_used) : null,
+      origem: job.departure_city_name || 'Desconhecido',
+      destino: job.arrival_city_name || 'Desconhecido',
+      empresa_origem: job.departure_company_name || 'Desconhecido',
+      empresa_destino: job.arrival_company_name || 'Desconhecido',
+      carga: job.cargo_name || 'Carga desconhecida',
+      peso_kg: num(job.cargo_mass),
+      distancia_km: num(job.distance_client),
+      combustivel_gasto_l: num(job.fuel_used),
       dano_pct: calcularDano(job),
-      valor_frete: job.revenue ? Number(job.revenue) : null,
+      valor_frete: num(job.income),
     };
 
     console.log(`[VTLog] Enviando job ${jobId} para o backend...`, JSON.stringify(payload));
@@ -178,15 +191,30 @@ async function processarJob(jobId, canal) {
   }
 }
 
-/** Soma os danos do veículo retornados pela API do VTLog. */
+/** Converte os números da API, que vêm ora como número, ora como string. */
+function num(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Pior dano da viagem, em %.
+ *
+ * É o maior entre os componentes, não a média: o que interessa ao gestor é se
+ * alguma coisa chegou detonada. Uma média dilui um motor a 40% no meio de sete
+ * zeros e a viagem passaria como se nada tivesse acontecido.
+ */
 function calcularDano(job) {
   const campos = [
-    job.damage_chassis, job.damage_engine, job.damage_transmission,
-    job.damage_cabin, job.damage_wheels, job.damage_cargo,
-  ];
-  const soma = campos.reduce((acc, v) => acc + (v ? Number(v) : 0), 0);
-  const count = campos.filter((v) => v !== undefined && v !== null).length;
-  return count > 0 ? Math.round((soma / count) * 100) / 100 : null;
+    job.truck_cabin_damage, job.truck_chassis_damage, job.truck_engine_damage,
+    job.truck_transmission_damage, job.truck_wheels_damage,
+    job.trailers_chassis_damage, job.trailers_wheels_damage,
+    job.trailers_body_damage, job.cargo_damage, job.trailer_cargo_damage,
+  ].map(num).filter((v) => v !== null);
+
+  if (campos.length === 0) return null;
+  return Math.round(Math.max(...campos) * 100) / 100;
 }
 
 client.login(DISCORD_TOKEN);
