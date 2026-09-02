@@ -4,10 +4,10 @@ WORKDIR /app
 
 # Baixa as dependências antes de copiar o código: enquanto o pom não muda,
 # essa camada fica em cache e o build seguinte é muito mais rápido.
-COPY pom.xml .
+COPY backend/pom.xml .
 RUN mvn -q dependency:go-offline
 
-COPY src ./src
+COPY backend/src ./src
 RUN mvn -q clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
