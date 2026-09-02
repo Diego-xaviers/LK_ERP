@@ -36,6 +36,8 @@ services:
       DATABASE_USER: ${POSTGRES_USER:-lk}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      # O mesmo segredo que o bot usa para provar que é ele chamando.
+      VTLOG_SECRET: ${VTLOG_SECRET:?defina VTLOG_SECRET no .env}
       # Painel e API no mesmo domínio — o Caddy faz o repasse.
       ORIGENS_PERMITIDAS: ${URL_PUBLICA}
       # É o endereço que vai dentro do pacote do agente de telemetria.
@@ -51,6 +53,22 @@ services:
       # A JVM leva alguns segundos para subir; sem isso o container seria
       # marcado como doente antes mesmo de terminar de iniciar.
       start_period: 90s
+
+  # Monitora o #registro-vtlog e registra as entregas sozinho. Não fica exposto:
+  # só fala com o Discord (saída) e com a api pela rede interna.
+  bot:
+    build: ./discord-bot
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?defina DISCORD_TOKEN no .env}
+      VTLOG_CHANNEL_ID: ${VTLOG_CHANNEL_ID:?defina VTLOG_CHANNEL_ID no .env}
+      VTLOG_SECRET: ${VTLOG_SECRET:?defina VTLOG_SECRET no .env}
+      # Rede interna do compose — não passa pela internet.
+      LK_API_URL: http://api:8080/api
+      VTC_ID: ${VTC_ID:-7777}
 
   painel:
     build:
