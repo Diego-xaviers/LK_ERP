@@ -326,6 +326,11 @@ function ModalCadastro({ cfg, onFechar, onSalvo }: {
   const [erro, setErro] = useState<string | null>(null);
 
   async function salvar() {
+    const faltando = cfg.campos.filter((c) => c.obrigatorio && !valores[c.nome]);
+    if (faltando.length > 0) {
+      setErro(`Preencha os campos obrigatórios: ${faltando.map((c) => c.label).join(', ')}.`);
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {

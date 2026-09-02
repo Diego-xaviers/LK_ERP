@@ -17,8 +17,10 @@ public class TratadorDeErros {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> integridade(DataIntegrityViolationException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("erro", "Não é possível remover: existem registros vinculados a este cadastro."));
+        String msg = e.getMessage() != null && e.getMessage().toLowerCase().contains("null value")
+                ? "Preencha todos os campos obrigatórios."
+                : "Não é possível remover: existem registros vinculados a este cadastro.";
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("erro", msg));
     }
 
     @ExceptionHandler(com.lktransportes.security.SessaoAtual.AcessoNegadoException.class)
