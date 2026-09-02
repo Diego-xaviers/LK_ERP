@@ -30,9 +30,9 @@ lk:
     senha: ${GESTOR_INICIAL_SENHA:}
     nome: ${GESTOR_INICIAL_NOME:Administrador}
   # Domínio(s) do painel que podem chamar esta API. Separar por vírgula.
-  origens-permitidas: ${ORIGENS_PERMITIDAS}
+  origens-permitidas: ${ORIGENS_PERMITIDAS:*}
   # URL pública desta API — é o que vai dentro do pacote do agente de telemetria.
-  url-api: ${URL_API}
+  url-api: ${URL_API:}
   h2-console-liberado: false
 
 server:
