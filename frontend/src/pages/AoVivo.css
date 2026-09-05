@@ -1,0 +1,221 @@
+.vivo {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
+.vivo__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.vivo__head h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.vivo__head p {
+  margin: 0;
+  color: var(--c-text-2, #888);
+  font-size: 0.85rem;
+}
+
+.vivo__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: var(--c-surface-2, #1e1e1e);
+  color: var(--c-text-2, #888);
+  white-space: nowrap;
+}
+
+.vivo__status.is-online { color: #2ecc71; }
+
+.vivo__pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.vivo__status.is-online .vivo__pulse {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* Grid de cards */
+.vivo__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(700px, 1fr));
+  gap: 1rem;
+}
+
+.vivo__card {
+  display: grid;
+  grid-template-columns: 160px 120px 200px 180px 130px 80px;
+  gap: 1rem;
+  align-items: start;
+  background: var(--c-surface-1, #141414);
+  border: 1px solid var(--c-border, #2a2a2a);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.vivo__card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vivo__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ecc71;
+  flex-shrink: 0;
+}
+
+.vivo__nome {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.vivo__sub {
+  font-size: 0.75rem;
+  color: var(--c-text-2, #888);
+  margin-top: 0.1rem;
+}
+
+.vivo__bloco { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.vivo__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--c-text-2, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.vivo__label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.vivo__pct { color: var(--c-text-1, #eee); }
+
+.vivo__barra-wrap {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--c-surface-2, #2a2a2a);
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.vivo__barra {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.vivo__barra-foot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--c-text-2, #888);
+}
+
+.vivo__rota {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--c-text-2, #888);
+  margin-top: 0.25rem;
+}
+
+.vivo__dano-linha {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.vivo__valor-sm { font-size: 0.78rem; font-weight: 600; }
+
+.vivo__fin-linha {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.vivo__fin-linha.verde { color: #2ecc71; }
+.vivo__fin-linha.vermelho { color: #e74c3c; }
+
+/* Velocidade */
+.vivo__velocidade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--c-border, #2a2a2a);
+  justify-self: center;
+  align-self: center;
+}
+
+.vivo__velocidade.is-acima { border-color: #e74c3c; }
+
+.vivo__vel-num {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.vivo__vel-lim {
+  font-size: 0.65rem;
+  color: var(--c-text-2, #888);
+}
+
+.vivo__velocidade.is-acima .vivo__vel-num { color: #e74c3c; }
+
+/* Empty state */
+.vivo__vazio {
+  padding: 4rem 1rem;
+  text-align: center;
+  color: var(--c-text-2, #888);
+}
+
+.vivo__vazio-sub { font-size: 0.8rem; margin-top: 0.5rem; }
+
+.vivo__erro {
+  padding: 0.75rem 1rem;
+  background: #3d1a1a;
+  color: #e74c3c;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .vivo__grid { grid-template-columns: 1fr; }
+  .vivo__card {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+}

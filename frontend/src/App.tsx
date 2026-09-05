@@ -18,6 +18,7 @@ import Habilitacao from './pages/Habilitacao';
 import Loja from './pages/Loja';
 import Gestao from './pages/Gestao';
 import Admin from './pages/Admin';
+import AoVivo from './pages/AoVivo';
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/credenciados" element={<Parceiros />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/telemetria" element={<Telemetria />} />
+          <Route path="/ao-vivo" element={<AoVivo />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/logistica" element={<Logistica />} />
           <Route path="/conferencia" element={<Conferencia />} />

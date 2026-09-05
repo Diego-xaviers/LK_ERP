@@ -55,6 +55,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/telemetria/ping").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/vtlog/entrega").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/vtlog/live-snapshot").permitAll()
                     .requestMatchers("/actuator/health").permitAll()
                     // O /error é para onde o Spring encaminha 404 e corpo malformado.
                     // Sem liberar, esse encaminhamento chega aqui sem o header
