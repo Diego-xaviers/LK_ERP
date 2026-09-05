@@ -196,7 +196,7 @@ export default function AoVivo() {
 
     async function buscar() {
       try {
-        const dados = await api<SnapshotResponse>('/vtlog/live');
+        const dados = await api.get<SnapshotResponse>('/vtlog/live');
         if (ativo) { setSnapshot(dados); setErro(null); }
       } catch {
         if (ativo) setErro('Erro ao buscar dados ao vivo.');
