@@ -28,13 +28,13 @@ COMO USAR
 1. Descompacte esta pasta em qualquer lugar (ex.: Documentos).
    IMPORTANTE: descompacte de verdade, nao rode de dentro do .zip.
 
-2. De dois cliques em  LK-Transportes.vbs
+2. De dois cliques em  LK-Transportes.exe
 
-   Na PRIMEIRA abertura, o aplicativo compila o LK-Transportes.exe
-   (leva alguns segundos). Nas proximas vezes abre instantaneamente.
-
-3. O icone LK aparece na barra de tarefas. Clique duas vezes para
-   abrir o painel de telemetria.
+3. O icone LK aparece na barra de tarefas.
+   Clique no icone para abrir o painel.
+   Para fechar a janela: clique no [x] - o agente continua rodando
+   em segundo plano. Para encerrar de verdade: botao direito no
+   icone da barra > Encerrar agente.
 
 4. Abra o ETS2, entre numa partida e pegue carga.
    A viagem abre sozinha no painel!
@@ -42,18 +42,15 @@ COMO USAR
 
 PERGUNTAS COMUNS
 ----------------
-"ETS2 nao encontrado"
+"ETS2 nao detectado" (ponto cinza)
    O jogo esta fechado, ou o scs-telemetry.dll nao esta instalado.
 
 "Token invalido"
    Voce gerou um token novo no painel. Baixe o pacote de novo.
 
 O Windows bloqueou o arquivo
-   Clique com o botao direito > Propriedades > Desbloquear.
-
-Erro na compilacao
-   Requer .NET Framework 4.6+ (incluido no Windows 10/11).
-   Acesse Windows Update e instale as atualizacoes pendentes.
+   Clique com o botao direito no EXE > Propriedades > Desbloquear.
+   Ou: Configuracoes do Windows > Seguranca > Permitir aplicativo.
 
 
 O agente so LE a memoria do jogo e envia para o painel da LK.
