@@ -187,6 +187,7 @@ export interface TelemetriaAtual {
   distanciaPlanejadaKm?: number;
   placaCaminhao?: string;
   modeloCaminhao?: string;
+  acaoPendente?: string;
 }
 
 /** O que a telemetria apurou de uma viagem — dado observado, não declarado. */

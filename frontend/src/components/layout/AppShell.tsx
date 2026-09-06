@@ -24,8 +24,6 @@ const NAV_GROUPS: { label: string; items: ItemNav[] }[] = [
       { to: '/nova-viagem', label: 'Nova viagem', icon: 'fileText' as const },
       { to: '/documentos', label: 'Documentos', icon: 'layers' as const },
       { to: '/historico', label: 'Minhas viagens', icon: 'clock' as const },
-      { to: '/telemetria', label: 'Telemetria', icon: 'radio' as const },
-      { to: '/ao-vivo', label: 'Ao Vivo', icon: 'radio' as const },
     ],
   },
   {

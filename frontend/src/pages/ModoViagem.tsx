@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, ApiError } from '../api/client';
+import { api, ApiError, BASE, sessao } from '../api/client';
 import { useApi } from '../hooks/useApi';
-import { Viagem, Posto, Oficina } from '../api/tipos';
+import { Viagem, Posto, Oficina, TelemetriaAtual, TelemetriaViagem as TViagemTipo } from '../api/tipos';
 import { Carregando, Erro, Vazio } from '../components/ui/Estado';
 import { useUsuario } from '../auth';
 import SignaturePad from '../components/SignaturePad';
@@ -13,11 +13,11 @@ import './ModoViagem.css';
 type TipoEvento = 'abastecimento' | 'manutencao' | 'pedagio' | 'multa' | 'ocorrencia';
 
 const ACOES: { tipo: TipoEvento; label: string; icon: 'fuel' | 'wrench' | 'cone' | 'siren' | 'alertCircle' }[] = [
-  { tipo: 'abastecimento', label: 'Abastecer', icon: 'fuel' },
-  { tipo: 'manutencao', label: 'Manutenção', icon: 'wrench' },
-  { tipo: 'pedagio', label: 'Pedágio', icon: 'cone' },
-  { tipo: 'multa', label: 'Multa', icon: 'siren' },
-  { tipo: 'ocorrencia', label: 'Ocorrência', icon: 'alertCircle' },
+  { tipo: 'abastecimento', label: 'Abastecer',  icon: 'fuel' },
+  { tipo: 'manutencao',   label: 'Manutenção', icon: 'wrench' },
+  { tipo: 'pedagio',      label: 'Pedágio',    icon: 'cone' },
+  { tipo: 'multa',        label: 'Multa',      icon: 'siren' },
+  { tipo: 'ocorrencia',   label: 'Ocorrência', icon: 'alertCircle' },
 ];
 
 const MARCADOR: Record<string, string> = {
@@ -25,36 +25,35 @@ const MARCADOR: Record<string, string> = {
   PEDAGIO: 'pedagio', MULTA: 'multa', OCORRENCIA: 'ocorrencia',
 };
 
-const brl = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+const brl  = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const fmt  = (v: number | null | undefined, d: number) =>
+  (v == null || isNaN(v)) ? '—' : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+// ---------------------------------------------------------------------------
 
 export default function ModoViagem() {
   const usuario = useUsuario();
   const { dados: viagem, carregando, erro, recarregar } =
     useApi<Viagem | null>(`/viagens/ativa/${usuario.id}`);
 
-  const [aberto, setAberto] = useState<TipoEvento | null>(null);
+  const [aberto,     setAberto]     = useState<TipoEvento | null>(null);
   const [finalizando, setFinalizando] = useState(false);
-  const [concluida, setConcluida] = useState<Viagem | null>(null);
-  const [entrega, setEntrega] = useState<{ observacaoFinal: string; houveAvaria: boolean } | null>(null);
+  const [concluida,  setConcluida]  = useState<Viagem | null>(null);
+  const [entrega,    setEntrega]    = useState<{ observacaoFinal: string; houveAvaria: boolean } | null>(null);
   const [erroEntrega, setErroEntrega] = useState<string | null>(null);
 
   if (carregando) return <Carregando texto="Buscando sua viagem..." />;
-  if (erro) return <Erro mensagem={erro} aoTentarNovamente={recarregar} />;
+  if (erro)       return <Erro mensagem={erro} aoTentarNovamente={recarregar} />;
+  if (concluida)  return <ViagemConcluida viagem={concluida} />;
 
-  // Acabou de chegar: mostra o resultado e o caminho para emendar a próxima
-  // viagem da mesma demanda, em vez de jogar direto no histórico.
-  if (concluida) return <ViagemConcluida viagem={concluida} />;
-
-  // A conferência contra a telemetria acontece de verdade no servidor durante o
-  // finalizar — as etapas aqui só dão o ritmo do que já está sendo feito.
   const overlayEntrega = entrega && (
     <Processo
       etapas={['Registrando a entrega', 'Conferindo com a telemetria', 'Fechando o romaneio']}
       sucesso="Entrega registrada."
       trabalho={() => api.post<Viagem>(`/viagens/${viagem!.id}/finalizar`, entrega)}
       aoConcluir={(v) => { setEntrega(null); setConcluida(v); }}
-      aoFalhar={(m) => { setEntrega(null); setErroEntrega(m); }}
+      aoFalhar={(m)   => { setEntrega(null); setErroEntrega(m); }}
     />
   );
 
@@ -68,124 +67,332 @@ export default function ModoViagem() {
     );
   }
 
-  /**
-   * Viagem criada mas ainda não iniciada: antes esta tela ficava vazia e quem
-   * pegava carga na Logística não tinha para onde ir. Agora ela mostra a viagem
-   * e o botão que falta.
-   */
-  if (viagem.status === 'CRIADA') {
-    return <ViagemAIniciar viagem={viagem} aoIniciar={recarregar} />;
-  }
+  if (viagem.status === 'CRIADA') return <ViagemAIniciar viagem={viagem} aoIniciar={recarregar} />;
 
-
-  // O modal só coleta; quem fecha a viagem é o overlay de etapas logo abaixo.
   async function finalizar(observacaoFinal: string, houveAvaria: boolean) {
     setFinalizando(false);
     setEntrega({ observacaoFinal, houveAvaria });
   }
 
   return (
-    <div className="viagem">
-      <section className="viagem__hero">
-        <div className="viagem__hero-top">
-          <span className="viagem__numero">Viagem #{viagem.numero}</span>
-          <span className="viagem__status"><span className="viagem__status-dot" />Em andamento</span>
-        </div>
+    <div className="vp">
+      {/* ── Hero: rota + barra de progresso ── */}
+      <HeroViagem viagem={viagem} motoristaId={usuario.id} />
 
-        <div className="viagem__rota">
-          <span>{viagem.origem}</span>
-          <Icon name="arrowRight" size={19} />
-          <span>{viagem.destino}</span>
-        </div>
+      {/* ── Corpo: cockpit ← → painel ── */}
+      <div className="vp__body">
+        <CockpitTele motoristaId={usuario.id} viagemId={viagem.id} />
 
-        <dl className="viagem__meta">
-          <div><dt>Carga</dt><dd>{viagem.carga} — {brl(viagem.pesoKg)} kg</dd></div>
-          <div><dt>Caminhão</dt><dd>{viagem.caminhao} · {viagem.placaCaminhao}</dd></div>
-          <div><dt>Carreta</dt><dd>{viagem.carreta ? `${viagem.carreta} — ${viagem.placaCarreta}` : '—'}</dd></div>
-        </dl>
-      </section>
-
-      <section className="viagem__acoes">
-        {ACOES.map((a) => (
-          <button key={a.tipo} className="acao" onClick={() => setAberto(a.tipo)}>
-            <span className="acao__icone"><Icon name={a.icon} size={22} strokeWidth={1.5} /></span>
-            {a.label}
-          </button>
-        ))}
-      </section>
-
-      <section className="viagem__timeline-card">
-        <header className="viagem__timeline-head">
-          <h2>Eventos da viagem</h2>
-          <span className="viagem__total">
-            Despesas: <strong>R$ {brl(viagem.totalDespesas ?? 0)}</strong>
-          </span>
-        </header>
-
-        {viagem.eventos.length === 0 ? (
-          <p className="viagem__vazio">
-            Nenhum evento ainda. Use os botões acima conforme a viagem acontecer.
-          </p>
-        ) : (
-          <ol className="timeline">
-            {viagem.eventos.map((e) => (
-              <li className="timeline__item" key={e.id}>
-                <span className={'timeline__marker timeline__marker--' + MARCADOR[e.tipo]} />
-                <span className="timeline__hora">{hora(e.ocorridoEm)}</span>
-                <span className="timeline__desc">{e.descricao}</span>
-                {e.valor != null && <span className="timeline__valor">R$ {brl(e.valor)}</span>}
-              </li>
+        <section className="vp__painel">
+          {/* Botões de ação */}
+          <div className="vp__acoes">
+            {ACOES.map((a) => (
+              <button key={a.tipo} className="acao" onClick={() => setAberto(a.tipo)}>
+                <span className="acao__icone"><Icon name={a.icon} size={22} strokeWidth={1.5} /></span>
+                {a.label}
+              </button>
             ))}
-          </ol>
-        )}
-      </section>
+          </div>
 
-      {erroEntrega && <div className="modal__erro">{erroEntrega}</div>}
+          {/* Timeline de eventos */}
+          <div className="vp__card">
+            <div className="vp__card-head">
+              <h2>Eventos</h2>
+              <span className="vp__badge">Despesas: <strong>R$ {brl(viagem.totalDespesas ?? 0)}</strong></span>
+            </div>
+            {viagem.eventos.length === 0 ? (
+              <p className="vp__vazio">Nenhum evento ainda. Use os botões acima.</p>
+            ) : (
+              <ol className="timeline">
+                {viagem.eventos.map((e) => (
+                  <li className="timeline__item" key={e.id}>
+                    <span className={'timeline__marker timeline__marker--' + MARCADOR[e.tipo]} />
+                    <span className="timeline__hora">{hora(e.ocorridoEm)}</span>
+                    <span className="timeline__desc">{e.descricao}</span>
+                    {e.valor != null && <span className="timeline__valor">R$ {brl(e.valor)}</span>}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
 
-      <button className="viagem__finalizar"
-              onClick={() => { setErroEntrega(null); setFinalizando(true); }}>
-        <Icon name="flag" size={16} /> Finalizar viagem
-      </button>
+          {/* Documentos */}
+          {viagem.documentos.length > 0 && (
+            <div className="vp__card vp__docs">
+              <div className="vp__card-head"><h2>Documentos</h2></div>
+              <div className="vp__docs-lista">
+                {viagem.documentos.map((d) => (
+                  <span key={d.id} className="vp__doc-chip">
+                    <span className="vp__doc-ok">✓</span> {d.tipo} · #{d.numero}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {erroEntrega && <div className="modal__erro">{erroEntrega}</div>}
+
+          <button className="vp__finalizar" onClick={() => { setErroEntrega(null); setFinalizando(true); }}>
+            <Icon name="flag" size={16} /> Finalizar viagem
+          </button>
+        </section>
+      </div>
 
       {aberto && (
-        <ModalEvento
-          tipo={aberto}
-          viagemId={viagem.id}
-          onFechar={() => setAberto(null)}
-          onRegistrado={() => { setAberto(null); recarregar(); }}
-        />
+        <ModalEvento tipo={aberto} viagemId={viagem.id}
+          onFechar={() => setAberto(null)} onRegistrado={() => { setAberto(null); recarregar(); }} />
       )}
-
       {finalizando && (
         <ModalFinalizar onFechar={() => setFinalizando(false)} onConfirmar={finalizar} numero={viagem.numero} />
       )}
-
       {overlayEntrega}
     </div>
   );
 }
 
-/* ---------------- Modal de registro de evento ---------------- */
+// ---------------------------------------------------------------------------
+// Hero com barra de progresso
+// ---------------------------------------------------------------------------
+
+function HeroViagem({ viagem, motoristaId }: { viagem: Viagem; motoristaId: string }) {
+  const { dados: tv }   = useApi<TViagemTipo>(`/telemetria/viagem/${viagem.id}`);
+  const { dados: tele } = useApi<TelemetriaAtual>(`/telemetria/atual/${motoristaId}`);
+
+  const rodado    = (tv?.odometroAtualKm ?? 0) - (tv?.odometroInicialKm ?? 0);
+  const planejado = tele?.distanciaPlanejadaKm ?? 0;
+  const pct       = planejado > 0 ? Math.min(100, Math.max(0, (rodado / planejado) * 100)) : 0;
+
+  return (
+    <section className="vp__hero">
+      <div className="vp__hero-top">
+        <span className="vp__numero">Viagem #{viagem.numero}</span>
+        <span className="vp__status"><span className="vp__status-dot" />Em andamento</span>
+      </div>
+
+      <div className="vp__rota-linha">
+        <span className="vp__cidade">{viagem.origem}</span>
+        <div className="vp__track">
+          <div className="vp__track-fill" style={{ width: `${pct}%` }} />
+          <span className="vp__truck" style={{ left: `${Math.max(0, Math.min(96, pct))}%` }}>🚛</span>
+        </div>
+        <span className="vp__cidade vp__cidade--dest">{viagem.destino}</span>
+      </div>
+
+      <div className="vp__hero-meta">
+        <span>{viagem.carga} · {fmt(viagem.pesoKg / 1000, 1)} t</span>
+        {planejado > 0
+          ? <span>{fmt(rodado, 0)} / {fmt(planejado, 0)} km · {fmt(pct, 0)}%</span>
+          : <span>{viagem.caminhao} · {viagem.placaCaminhao}</span>
+        }
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cockpit de telemetria (coluna esquerda)
+// ---------------------------------------------------------------------------
+
+function CockpitTele({ motoristaId, viagemId }: { motoristaId: string; viagemId: string }) {
+  const { dados: tele, recarregar } = useApi<TelemetriaAtual>(`/telemetria/atual/${motoristaId}`);
+
+  useEffect(() => {
+    const t = setInterval(recarregar, 3000);
+    return () => clearInterval(t);
+  }, [recarregar]);
+
+  const online = tele?.online ?? false;
+
+  const tanquePct = tele?.combustivelL && tele?.combustivelCapacidadeL
+    ? (tele.combustivelL / tele.combustivelCapacidadeL) * 100 : null;
+
+  const danos = [
+    { label: 'Motor',  v: tele?.danoMotorPct },
+    { label: 'Câmbio', v: tele?.danoCambioPct },
+    { label: 'Cabine', v: tele?.danoCabinePct },
+    { label: 'Chassi', v: tele?.danoChassiPct },
+    { label: 'Rodas',  v: tele?.danoRodasPct },
+    { label: 'Carga',  v: tele?.danoCargaPct },
+  ];
+
+  return (
+    <aside className="vp__cockpit">
+      <div className="vp__cockpit-head">
+        <span className={'vp__dot' + (online ? ' vp__dot--on' : '')} />
+        <span>{online ? 'Agente conectado' : 'Agente offline'}</span>
+      </div>
+
+      {/* Velocímetro */}
+      <div className="vp__card vp__vel-card">
+        <Velocimetro kmh={tele?.velocidadeKmh} />
+        <div className="vp__vel-info">
+          <span className="vp__vel-num">{fmt(tele?.velocidadeKmh, 0)}</span>
+          <span className="vp__vel-unit">km/h</span>
+        </div>
+        {tele?.marcha != null && (
+          <div className="vp__vel-gear">M{tele.marcha}</div>
+        )}
+      </div>
+
+      {/* Combustível */}
+      <div className="vp__card">
+        <div className="vp__card-head">
+          <span><Icon name="fuel" size={13} /> Combustível</span>
+          <span className="vp__badge">{fmt(tele?.combustivelL, 0)} L</span>
+        </div>
+        <div className="vp__barra-wrap">
+          <div className="vp__barra">
+            <div
+              className={'vp__barra-fill' + ((tanquePct ?? 100) < 15 ? ' vp__barra-fill--alerta' : '')}
+              style={{ width: `${tanquePct ?? 0}%` }}
+            />
+          </div>
+          <span className="vp__barra-pct">{fmt(tanquePct, 0)}%</span>
+        </div>
+      </div>
+
+      {/* Danos */}
+      <div className="vp__card">
+        <div className="vp__card-head"><span><Icon name="alertCircle" size={13} /> Estado do caminhão</span></div>
+        <div className="vp__danos">
+          {danos.map(({ label, v }) => {
+            const pct = v ?? 0;
+            return (
+              <div key={label} className="vp__dano">
+                <span className="vp__dano-label">{label}</span>
+                <div className="vp__barra vp__barra--fina">
+                  <div className={'vp__barra-fill' + (pct > 20 ? ' vp__barra-fill--alerta' : '')}
+                       style={{ width: `${Math.min(100, pct)}%` }} />
+                </div>
+                <span className="vp__dano-val">{fmt(pct, 1)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Informações do jogo */}
+      {online && tele?.cargaNome && (
+        <div className="vp__card">
+          <div className="vp__card-head"><span><Icon name="route" size={13} /> No jogo</span></div>
+          <dl className="vp__dl">
+            {tele.cargaNome && <><dt>Carga</dt><dd>{tele.cargaNome}</dd></>}
+            {tele.modeloCaminhao && <><dt>Caminhão</dt><dd>{tele.modeloCaminhao}</dd></>}
+          </dl>
+        </div>
+      )}
+
+      {/* Card do agente (quando offline) */}
+      {!online && <CartaoAgente motoristaId={motoristaId} />}
+    </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Velocímetro SVG (semicírculo com stroke-dasharray)
+// ---------------------------------------------------------------------------
+
+const ARC_R = 52;
+const ARC_CX = 70, ARC_CY = 72;
+const ARC_LEN = Math.PI * ARC_R; // ≈ 163.4
+
+function Velocimetro({ kmh }: { kmh?: number }) {
+  const MAX = 160;
+  const pct = Math.min(100, Math.max(0, ((kmh ?? 0) / MAX) * 100));
+  const fill = ARC_LEN * (pct / 100);
+  const offset = ARC_LEN - fill;
+
+  const sx = ARC_CX - ARC_R, sy = ARC_CY;
+  const ex = ARC_CX + ARC_R, ey = ARC_CY;
+
+  return (
+    <svg viewBox="0 0 140 80" className="vp__vel-svg" aria-hidden>
+      {/* Fundo */}
+      <path
+        d={`M ${sx} ${sy} A ${ARC_R} ${ARC_R} 0 0 1 ${ex} ${ey}`}
+        fill="none" stroke="var(--line-strong)" strokeWidth={10} strokeLinecap="round"
+      />
+      {/* Preenchimento colorido */}
+      <path
+        d={`M ${sx} ${sy} A ${ARC_R} ${ARC_R} 0 0 1 ${ex} ${ey}`}
+        fill="none"
+        stroke={pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warning)' : 'var(--accent)'}
+        strokeWidth={10} strokeLinecap="round"
+        strokeDasharray={`${ARC_LEN}`}
+        strokeDashoffset={`${offset}`}
+        style={{ transition: 'stroke-dashoffset .3s ease, stroke .3s ease' }}
+      />
+      {/* Marcadores de velocidade */}
+      {[0, 40, 80, 120, 160].map((v) => {
+        const a = Math.PI * (1 - v / MAX);
+        const r1 = ARC_R - 6, r2 = ARC_R + 2;
+        const x1 = ARC_CX + r1 * Math.cos(a), y1 = ARC_CY - r1 * Math.sin(a);
+        const x2 = ARC_CX + r2 * Math.cos(a), y2 = ARC_CY - r2 * Math.sin(a);
+        return <line key={v} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-400)" strokeWidth={1.5} />;
+      })}
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card de instalação do agente (quando offline)
+// ---------------------------------------------------------------------------
+
+function CartaoAgente({ motoristaId }: { motoristaId: string }) {
+  const [baixando, setBaixando] = useState(false);
+
+  async function baixar() {
+    setBaixando(true);
+    try {
+      const r = await fetch(`${BASE}/telemetria/agente/${motoristaId}`, {
+        headers: { Authorization: `Bearer ${sessao.token()}` },
+      });
+      if (!r.ok) throw new Error();
+      const url = URL.createObjectURL(await r.blob());
+      const a = document.createElement('a');
+      a.href = url; a.download = 'LK-Telemetria.zip'; a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBaixando(false);
+    }
+  }
+
+  return (
+    <div className="vp__card vp__agente-card">
+      <div className="vp__agente-icone">📡</div>
+      <p className="vp__agente-txt">
+        Ligue o agente de telemetria para ver velocidade, combustível e danos em tempo real.
+      </p>
+      <button className="btn vp__agente-btn" onClick={baixar} disabled={baixando}>
+        {baixando ? 'Preparando...' : 'Baixar agente LK'}
+      </button>
+      <span className="vp__agente-hint">Windows · ETS2/ATS</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-componentes reutilizados dos modais (inalterados)
+// ---------------------------------------------------------------------------
+
 function ModalEvento({ tipo, viagemId, onFechar, onRegistrado }: {
   tipo: TipoEvento; viagemId: string; onFechar: () => void; onRegistrado: () => void;
 }) {
-  const postos = useApi<Posto[]>(tipo === 'abastecimento' ? '/postos' : null);
+  const postos  = useApi<Posto[]>(tipo === 'abastecimento' ? '/postos' : null);
   const oficinas = useApi<Oficina[]>(tipo === 'manutencao' ? '/oficinas' : null);
 
-  const [campos, setCampos] = useState<Record<string, string>>({});
+  const [campos, setCampos]   = useState<Record<string, string>>({});
   const [assinatura, setAssinatura] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro]       = useState<string | null>(null);
 
   const set = (k: string, v: string) => setCampos((c) => ({ ...c, [k]: v }));
 
   const total = campos.litros && campos.valorLitro
-    ? (Number(campos.litros) * Number(campos.valorLitro))
-    : 0;
+    ? (Number(campos.litros) * Number(campos.valorLitro)) : 0;
 
   async function confirmar() {
-    setSalvando(true);
-    setErro(null);
+    setSalvando(true); setErro(null);
     try {
       if (tipo === 'abastecimento') {
         if (!assinatura) throw new ApiError(400, 'É preciso assinar antes de confirmar.');
@@ -211,9 +418,7 @@ function ModalEvento({ tipo, viagemId, onFechar, onRegistrado }: {
       onRegistrado();
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : 'Não foi possível registrar.');
-    } finally {
-      setSalvando(false);
-    }
+    } finally { setSalvando(false); }
   }
 
   return (
@@ -234,8 +439,7 @@ function ModalEvento({ tipo, viagemId, onFechar, onRegistrado }: {
             </label>
             {postos.dados?.length === 0 && (
               <p className="modal__dica">
-                Nenhum posto credenciado ainda. A gestão cadastra em Administração →
-                Postos; a lista aparece em <Link to="/credenciados">Credenciados</Link>.
+                Nenhum posto credenciado. A gestão cadastra em Administração → Postos.
               </p>
             )}
             <div className="campo-linha">
@@ -284,13 +488,10 @@ function ModalEvento({ tipo, viagemId, onFechar, onRegistrado }: {
               </select>
             </label>
             {oficinas.dados?.length === 0 && (
-              <p className="modal__dica">
-                Nenhuma oficina credenciada ainda. A gestão cadastra em Administração →
-                Oficinas; a lista aparece em <Link to="/credenciados">Credenciados</Link>.
-              </p>
+              <p className="modal__dica">Nenhuma oficina credenciada.</p>
             )}
             <label className="campo"><span>Serviço realizado</span>
-              <input placeholder="Reparo do motor após colisão" onChange={(e) => set('servico', e.target.value)} /></label>
+              <input placeholder="Reparo do motor" onChange={(e) => set('servico', e.target.value)} /></label>
             <label className="campo campo--curto"><span>Valor</span>
               <input type="number" step="0.01" onChange={(e) => set('valor', e.target.value)} /></label>
           </>
@@ -318,11 +519,10 @@ function ModalEvento({ tipo, viagemId, onFechar, onRegistrado }: {
   );
 }
 
-/* ---------------- Modal de finalização ---------------- */
 function ModalFinalizar({ numero, onFechar, onConfirmar }: {
   numero: number; onFechar: () => void; onConfirmar: (obs: string, avaria: boolean) => Promise<void>;
 }) {
-  const [obs, setObs] = useState('');
+  const [obs, setObs]       = useState('');
   const [avaria, setAvaria] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
@@ -331,10 +531,8 @@ function ModalFinalizar({ numero, onFechar, onConfirmar }: {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Entrega concluída?</h3>
         <p className="modal__hint">Isso encerra a viagem #{numero} e libera você para criar a próxima.</p>
-        <label className="campo">
-          <span>Observação final (opcional)</span>
-          <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} />
-        </label>
+        <label className="campo"><span>Observação final (opcional)</span>
+          <textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} /></label>
         <label className="campo campo--inline">
           <input type="checkbox" checked={avaria} onChange={(e) => setAvaria(e.target.checked)} />
           <span>Houve avaria na carga</span>
@@ -351,17 +549,6 @@ function ModalFinalizar({ numero, onFechar, onConfirmar }: {
   );
 }
 
-/**
- * Viagem pega na Logística, ainda parada. Mostra o que foi contratado e o
- * caminho para começar: gerar os documentos e iniciar.
- */
-/**
- * Fim da viagem.
- *
- * A demanda não é do motorista: ela é um contrato da transportadora que várias
- * viagens vão abatendo. Por isso o caminho natural depois de entregar é emendar
- * a próxima da mesma demanda — e não voltar à Logística procurar de novo.
- */
 function ViagemConcluida({ viagem }: { viagem: Viagem }) {
   const navigate = useNavigate();
   const retida = viagem.conferencia === 'RETIDA';
@@ -375,18 +562,13 @@ function ViagemConcluida({ viagem }: { viagem: Viagem }) {
           {viagem.carga} · {(viagem.pesoKg / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} t
           {viagem.demandaNumero != null && ` · demanda #${viagem.demandaNumero}`}
         </p>
-
         {retida ? (
           <div className="modal__erro">
             Retida na conferência: {viagem.motivosConferencia}
-            <br />Ela só abate a demanda e entra no acerto depois que a gestão liberar.
           </div>
         ) : (
-          <p className="viagem__aguardando-dica">
-            Entrega confirmada — o peso já foi abatido da demanda e o frete entrou no caixa.
-          </p>
+          <p className="viagem__aguardando-dica">Entrega confirmada — frete entrou no caixa.</p>
         )}
-
         <div className="viagem__aguardando-acoes">
           {viagem.demandaId && (
             <button className="btn"
@@ -394,8 +576,7 @@ function ViagemConcluida({ viagem }: { viagem: Viagem }) {
               Próxima viagem desta demanda
             </button>
           )}
-          <Link className="btn btn--ghost" to={`/documentos?viagem=${viagem.id}`}
-                style={{ textDecoration: 'none' }}>
+          <Link className="btn btn--ghost" to={`/documentos?viagem=${viagem.id}`} style={{ textDecoration: 'none' }}>
             Ver documentos
           </Link>
           <Link className="btn btn--ghost" to="/historico" style={{ textDecoration: 'none' }}>
@@ -409,9 +590,8 @@ function ViagemConcluida({ viagem }: { viagem: Viagem }) {
 
 function ViagemAIniciar({ viagem, aoIniciar }: { viagem: Viagem; aoIniciar: () => void }) {
   const [ocupado, setOcupado] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro]       = useState<string | null>(null);
 
-  // Documentos primeiro: a viagem só sai do pátio com NF, CT-e e MDF-e.
   const partida = async () => {
     await api.post(`/viagens/${viagem.id}/documentos`);
     await api.post(`/viagens/${viagem.id}/iniciar`);
@@ -426,7 +606,6 @@ function ViagemAIniciar({ viagem, aoIniciar }: { viagem: Viagem; aoIniciar: () =
           {viagem.carga} · {(viagem.pesoKg / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} t
           {viagem.demandaNumero != null && ` · demanda #${viagem.demandaNumero}`}
         </p>
-
         <dl className="viagem__aguardando-dados">
           <div><dt>Caminhão</dt><dd>{viagem.caminhao} · {viagem.placaCaminhao}</dd></div>
           {viagem.carreta && <div><dt>Carreta</dt><dd>{viagem.carreta}</dd></div>}
@@ -436,27 +615,19 @@ function ViagemAIniciar({ viagem, aoIniciar }: { viagem: Viagem; aoIniciar: () =
             </div>
           )}
         </dl>
-
         <p className="viagem__aguardando-dica">
-          Carregue no jogo e ligue o agente de telemetria antes de iniciar —
-          viagem sem telemetria fica retida na conferência.
+          Carregue no jogo e ligue o agente de telemetria antes de iniciar.
         </p>
-
         {erro && <div className="modal__erro">{erro}</div>}
         <div className="viagem__aguardando-acoes">
           <button className="btn" onClick={() => { setErro(null); setOcupado(true); }}>
             Gerar documentos e iniciar viagem
           </button>
-          <Link className="btn btn--ghost" to="/telemetria" style={{ textDecoration: 'none' }}>
-            Conferir telemetria
-          </Link>
-          <Link className="btn btn--ghost" to={`/documentos?viagem=${viagem.id}`}
-                style={{ textDecoration: 'none' }}>
+          <Link className="btn btn--ghost" to={`/documentos?viagem=${viagem.id}`} style={{ textDecoration: 'none' }}>
             Ver documentos
           </Link>
         </div>
       </section>
-
       {ocupado && (
         <Processo
           etapas={['Emitindo Nota Fiscal', 'Emitindo CT-e', 'Emitindo MDF-e', 'Liberando a saída do pátio']}

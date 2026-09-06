@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class VtlogService {
@@ -15,15 +16,34 @@ public class VtlogService {
     private final PerfilRepository perfis;
     private final ViagemRepository viagens;
     private final TelemetriaViagemRepository telemetrias;
+    private final EventoViagemRepository eventos;
 
     @Value("${lk.vtlog-secret:}")
     private String vtlogSecret;
 
     public VtlogService(PerfilRepository perfis, ViagemRepository viagens,
-                        TelemetriaViagemRepository telemetrias) {
+                        TelemetriaViagemRepository telemetrias, EventoViagemRepository eventos) {
         this.perfis = perfis;
         this.viagens = viagens;
         this.telemetrias = telemetrias;
+        this.eventos = eventos;
+    }
+
+    /** Chamado pelo VtlogController quando detecta aumento de fines no snapshot ao vivo. */
+    @Transactional
+    public void registrarMultaVtlog(String steamId, double valor) {
+        Optional<Perfil> perfilOpt = perfis.findBySteamId(steamId);
+        if (perfilOpt.isEmpty()) return;
+
+        Usuario motorista = perfilOpt.get().getUsuario();
+        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
+            Multa multa = new Multa();
+            multa.setViagem(v);
+            multa.setMotivo("Multa detectada automaticamente via VTLog");
+            multa.setValor(BigDecimal.valueOf(valor).setScale(2, java.math.RoundingMode.HALF_UP));
+            multa.setOrigem(EventoViagem.Origem.TELEMETRIA);
+            eventos.save(multa);
+        });
     }
 
     public void validarSegredo(String cabecalho) {

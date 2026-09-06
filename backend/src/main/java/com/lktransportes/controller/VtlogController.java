@@ -1,5 +1,7 @@
 package com.lktransportes.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lktransportes.model.Viagem;
 import com.lktransportes.service.VtlogService;
 import org.springframework.http.HttpStatus;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Recebe entregas registradas pelo bot do Discord que monitora o #registro-vtlog.
@@ -22,14 +25,18 @@ import java.util.Map;
 public class VtlogController {
 
     private final VtlogService vtlog;
+    private final ObjectMapper mapper;
 
     // Cache em memória do último snapshot recebido pelo webhook do VTLog.
-    // volatile garante visibilidade entre threads sem precisar de lock.
     private volatile String snapshotJson = null;
     private volatile Instant snapshotAtualizado = null;
 
-    public VtlogController(VtlogService vtlog) {
+    /** Último valor de fines conhecido por steam_id — para calcular deltas. */
+    private final ConcurrentHashMap<String, Double> multasAnteriores = new ConcurrentHashMap<>();
+
+    public VtlogController(VtlogService vtlog, ObjectMapper mapper) {
         this.vtlog = vtlog;
+        this.mapper = mapper;
     }
 
     @PostMapping("/entrega")
@@ -67,7 +74,64 @@ public class VtlogController {
     public ResponseEntity<?> liveSnapshot(@RequestBody String payload) {
         snapshotJson = payload;
         snapshotAtualizado = Instant.now();
+        detectarMultas(payload);
         return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /**
+     * Percorre o snapshot procurando `expense_fines` por driver.
+     * Quando o valor aumenta em relação ao anterior, registra uma Multa.
+     * Compatível com o formato VTLog: { drivers: [ { steam_id, economy: { expense_fines } } ] }
+     * ou variações com campo direto `fines` ou `expense_fines` no nível do driver.
+     */
+    private void detectarMultas(String payload) {
+        try {
+            JsonNode root = mapper.readTree(payload);
+            JsonNode drivers = root.path("drivers");
+            if (drivers.isMissingNode()) drivers = root.path("data");
+            if (!drivers.isArray()) return;
+
+            for (JsonNode d : drivers) {
+                String steamId = nomeOuNulo(d, "steam_id", "steamId");
+                if (steamId == null) continue;
+
+                double finesAtual = finesDeNode(d);
+                if (finesAtual < 0) continue;
+
+                Double anterior = multasAnteriores.put(steamId, finesAtual);
+                if (anterior != null && finesAtual > anterior) {
+                    double delta = finesAtual - anterior;
+                    vtlog.registrarMultaVtlog(steamId, delta);
+                }
+            }
+        } catch (Exception ignored) {
+            // Payload malformado não deve derrubar o endpoint.
+        }
+    }
+
+    private double finesDeNode(JsonNode d) {
+        // Tenta vários caminhos conhecidos do VTLog
+        for (String campo : new String[]{"expense_fines", "fines"}) {
+            JsonNode v = d.path(campo);
+            if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
+        }
+        // economia aninhada
+        JsonNode eco = d.path("economy");
+        if (!eco.isMissingNode()) {
+            for (String campo : new String[]{"expense_fines", "fines"}) {
+                JsonNode v = eco.path(campo);
+                if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
+            }
+        }
+        return -1;
+    }
+
+    private String nomeOuNulo(JsonNode node, String... campos) {
+        for (String c : campos) {
+            JsonNode v = node.path(c);
+            if (!v.isMissingNode() && v.isTextual()) return v.asText();
+        }
+        return null;
     }
 
     /** Retorna o último snapshot ao vivo para o frontend. Exige JWT. */
