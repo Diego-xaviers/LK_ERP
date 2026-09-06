@@ -205,6 +205,22 @@ export interface TelemetriaViagem {
   divergencias?: string;
 }
 
+export interface MotoristaFrota {
+  motoristaId: string;
+  motoristaNome: string;
+  velocidadeKmh?: number;
+  combustivelL?: number;
+  combustivelCapacidadeL?: number;
+  cidadeOrigem?: string;
+  cidadeDestino?: string;
+  cargaNome?: string;
+  danoMotorPct?: number;
+  emServico?: boolean;
+  placaCaminhao?: string;
+  modeloCaminhao?: string;
+  atualizadoEm: string;
+}
+
 export interface Usuario {
   id: string;
   nome: string;

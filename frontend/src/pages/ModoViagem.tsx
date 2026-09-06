@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, BASE, sessao } from '../api/client';
 import { useApi } from '../hooks/useApi';
-import { Viagem, Posto, Oficina, TelemetriaAtual, TelemetriaViagem as TViagemTipo } from '../api/tipos';
+import { Viagem, Posto, Oficina, TelemetriaAtual, TelemetriaViagem as TViagemTipo, MotoristaFrota } from '../api/tipos';
 import { Carregando, Erro, Vazio } from '../components/ui/Estado';
-import { useUsuario } from '../auth';
+import { useUsuario, useSessao } from '../auth';
 import SignaturePad from '../components/SignaturePad';
 import Icon from '../components/ui/Icon';
 import Processo from '../components/ui/Processo';
@@ -58,13 +58,7 @@ export default function ModoViagem() {
   );
 
   if (!viagem) {
-    return (
-      <Vazio
-        titulo="Nenhuma viagem em andamento"
-        descricao="Entre numa demanda na Logística para começar."
-        acao={<Link className="btn" to="/logistica" style={{ marginTop: 12, textDecoration: 'none' }}>Ver demandas abertas</Link>}
-      />
-    );
+    return <SemViagem motoristaId={usuario.id} />;
   }
 
   if (viagem.status === 'CRIADA') return <ViagemAIniciar viagem={viagem} aoIniciar={recarregar} />;
@@ -146,6 +140,30 @@ export default function ModoViagem() {
         <ModalFinalizar onFechar={() => setFinalizando(false)} onConfirmar={finalizar} numero={viagem.numero} />
       )}
       {overlayEntrega}
+
+      {/* Frota ao vivo (só gestão, fora da viagem ativa) */}
+      <FrotaOnline />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Estado: sem viagem ativa
+// ---------------------------------------------------------------------------
+
+function SemViagem({ motoristaId }: { motoristaId: string }) {
+  return (
+    <div className="vp">
+      <Vazio
+        titulo="Nenhuma viagem em andamento"
+        descricao="Entre numa demanda na Logística para começar."
+        acao={<Link className="btn" to="/logistica" style={{ marginTop: 12, textDecoration: 'none' }}>Ver demandas abertas</Link>}
+      />
+      {/* Card de download do agente sempre visível */}
+      <div style={{ maxWidth: 380 }}>
+        <CartaoAgente motoristaId={motoristaId} />
+      </div>
+      <FrotaOnline />
     </div>
   );
 }
@@ -158,9 +176,12 @@ function HeroViagem({ viagem, motoristaId }: { viagem: Viagem; motoristaId: stri
   const { dados: tv }   = useApi<TViagemTipo>(`/telemetria/viagem/${viagem.id}`);
   const { dados: tele } = useApi<TelemetriaAtual>(`/telemetria/atual/${motoristaId}`);
 
-  const rodado    = (tv?.odometroAtualKm ?? 0) - (tv?.odometroInicialKm ?? 0);
-  const planejado = tele?.distanciaPlanejadaKm ?? 0;
-  const pct       = planejado > 0 ? Math.min(100, Math.max(0, (rodado / planejado) * 100)) : 0;
+  // Só calcula se ambos os extremos estiverem disponíveis — evita usar odômetro total
+  const rodado = (tv?.odometroInicialKm != null && tv?.odometroAtualKm != null)
+    ? Math.max(0, tv.odometroAtualKm - tv.odometroInicialKm) : null;
+  const planejado = tele?.distanciaPlanejadaKm ?? null;
+  const pct = (rodado != null && planejado != null && planejado > 0)
+    ? Math.min(100, (rodado / planejado) * 100) : 0;
 
   return (
     <section className="vp__hero">
@@ -180,7 +201,7 @@ function HeroViagem({ viagem, motoristaId }: { viagem: Viagem; motoristaId: stri
 
       <div className="vp__hero-meta">
         <span>{viagem.carga} · {fmt(viagem.pesoKg / 1000, 1)} t</span>
-        {planejado > 0
+        {rodado != null && planejado != null && planejado > 0
           ? <span>{fmt(rodado, 0)} / {fmt(planejado, 0)} km · {fmt(pct, 0)}%</span>
           : <span>{viagem.caminhao} · {viagem.placaCaminhao}</span>
         }
@@ -368,6 +389,70 @@ function CartaoAgente({ motoristaId }: { motoristaId: string }) {
       </button>
       <span className="vp__agente-hint">Windows · ETS2/ATS</span>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Frota ao vivo (gestão)
+// ---------------------------------------------------------------------------
+
+function FrotaOnline() {
+  const { eGestor } = useSessao();
+  const { dados, recarregar } = useApi<MotoristaFrota[]>('/telemetria/frota');
+
+  useEffect(() => {
+    if (!eGestor) return;
+    const t = setInterval(recarregar, 5000);
+    return () => clearInterval(t);
+  }, [eGestor, recarregar]);
+
+  if (!eGestor || !dados || dados.length === 0) return null;
+
+  return (
+    <section className="vp__frota">
+      <h2 className="vp__frota-titulo">Frota ao vivo · {dados.length} motorista{dados.length !== 1 ? 's' : ''}</h2>
+      <div className="vp__frota-grid">
+        {dados.map((m) => {
+          const tanquePct = m.combustivelL && m.combustivelCapacidadeL
+            ? Math.round((m.combustivelL / m.combustivelCapacidadeL) * 100) : null;
+          return (
+            <div key={m.motoristaId} className="vp__frota-card">
+              <div className="vp__frota-cabeca">
+                <span className="vp__frota-nome">{m.motoristaNome}</span>
+                {m.emServico
+                  ? <span className="vp__frota-badge vp__frota-badge--on">Em serviço</span>
+                  : <span className="vp__frota-badge">Livre</span>
+                }
+              </div>
+              <div className="vp__frota-dados">
+                <div className="vp__frota-vel">
+                  <span className="vp__frota-num">{fmt(m.velocidadeKmh, 0)}</span>
+                  <span className="vp__frota-unit">km/h</span>
+                </div>
+                <div className="vp__frota-info">
+                  {m.modeloCaminhao && <span>{m.modeloCaminhao}</span>}
+                  {m.placaCaminhao  && <span className="vp__frota-placa">{m.placaCaminhao}</span>}
+                  {m.cargaNome      && <span className="vp__frota-carga">{m.cargaNome}</span>}
+                  {m.cidadeOrigem && m.cidadeDestino && (
+                    <span className="vp__frota-rota">{m.cidadeOrigem} → {m.cidadeDestino}</span>
+                  )}
+                </div>
+              </div>
+              {tanquePct != null && (
+                <div className="vp__barra-wrap vp__frota-tank">
+                  <Icon name="fuel" size={11} />
+                  <div className="vp__barra vp__barra--fina" style={{ flex: 1 }}>
+                    <div className={'vp__barra-fill' + (tanquePct < 15 ? ' vp__barra-fill--alerta' : '')}
+                         style={{ width: `${tanquePct}%` }} />
+                  </div>
+                  <span className="vp__barra-pct">{tanquePct}%</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

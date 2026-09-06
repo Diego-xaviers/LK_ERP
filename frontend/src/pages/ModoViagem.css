@@ -198,6 +198,52 @@
   .vp__acoes { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Frota ao vivo (gestão) ── */
+.vp__frota { margin-top: var(--sp-2); }
+.vp__frota-titulo {
+  font-size: var(--text-sm); font-weight: 600; color: var(--ink-400);
+  letter-spacing: .04em; text-transform: uppercase; margin-bottom: var(--sp-3);
+}
+.vp__frota-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp-3);
+}
+.vp__frota-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: var(--sp-4);
+  box-shadow: var(--shadow-xs);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.vp__frota-cabeca {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.vp__frota-nome { font-weight: 600; font-size: var(--text-base); }
+.vp__frota-badge {
+  font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--surface-2); color: var(--ink-400); border: 1px solid var(--line);
+}
+.vp__frota-badge--on {
+  background: var(--accent-soft); color: var(--accent); border-color: transparent;
+}
+.vp__frota-dados { display: flex; align-items: center; gap: var(--sp-3); }
+.vp__frota-vel { display: flex; align-items: baseline; gap: 3px; }
+.vp__frota-num { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vp__frota-unit { font-size: var(--text-xs); color: var(--ink-400); }
+.vp__frota-info {
+  flex: 1; display: flex; flex-direction: column; gap: 2px;
+  font-size: var(--text-xs); color: var(--ink-500); overflow: hidden;
+}
+.vp__frota-placa {
+  font-size: 10px; font-weight: 600; color: var(--ink-400);
+  background: var(--surface-2); border-radius: 4px; padding: 1px 6px; align-self: flex-start;
+}
+.vp__frota-carga { color: var(--ink-700); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vp__frota-rota  { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vp__frota-tank  { margin-top: 2px; gap: 6px; align-items: center; }
+.vp__frota-tank svg { color: var(--ink-400); flex-shrink: 0; }
+
 /* ══════════════════════════════════════════════
    Legado: mantido para ViagemAIniciar, ViagemConcluida
    ══════════════════════════════════════════════ */

@@ -4,6 +4,7 @@ import com.lktransportes.dto.TelemetriaPing;
 import com.lktransportes.model.TelemetriaSessao;
 import com.lktransportes.model.TelemetriaViagem;
 import com.lktransportes.model.Usuario;
+import com.lktransportes.repository.TelemetriaSessaoRepository;
 import com.lktransportes.repository.UsuarioRepository;
 import com.lktransportes.service.TelemetriaService;
 import org.springframework.core.io.ClassPathResource;
@@ -16,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -27,6 +29,7 @@ public class TelemetriaController {
 
     private final TelemetriaService service;
     private final UsuarioRepository usuarios;
+    private final TelemetriaSessaoRepository sessoes;
     private final com.lktransportes.security.SessaoAtual sessao;
 
     /**
@@ -37,9 +40,11 @@ public class TelemetriaController {
     private String urlDaApi;
 
     public TelemetriaController(TelemetriaService service, UsuarioRepository usuarios,
+                                TelemetriaSessaoRepository sessoes,
                                 com.lktransportes.security.SessaoAtual sessao) {
         this.service = service;
         this.usuarios = usuarios;
+        this.sessoes = sessoes;
         this.sessao = sessao;
     }
 
@@ -66,6 +71,34 @@ public class TelemetriaController {
         return service.sessaoDe(motoristaId)
                 .<ResponseEntity<Map<String, Object>>>map(s -> ResponseEntity.ok(comoMapa(s)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    /** Frota ao vivo — todas as sessões com ping nos últimos 20 s. Restrito a gestores. */
+    @GetMapping("/frota")
+    public List<Map<String, Object>> frota() {
+        sessao.exigirGestor();
+        java.time.LocalDateTime corte = java.time.LocalDateTime.now().minusSeconds(20);
+        return sessoes.findRecentes(corte).stream()
+                .map(this::comoMapaFrota)
+                .toList();
+    }
+
+    private Map<String, Object> comoMapaFrota(TelemetriaSessao s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("motoristaId",  s.getMotorista().getId());
+        m.put("motoristaNome", s.getMotorista().getNome());
+        m.put("velocidadeKmh", s.getVelocidadeKmh());
+        m.put("combustivelL",  s.getCombustivelL());
+        m.put("combustivelCapacidadeL", s.getCombustivelCapacidadeL());
+        m.put("cidadeOrigem",  s.getCidadeOrigem());
+        m.put("cidadeDestino", s.getCidadeDestino());
+        m.put("cargaNome",     s.getCargaNome());
+        m.put("danoMotorPct",  s.getDanoMotorPct());
+        m.put("emServico",     s.getEmServico());
+        m.put("placaCaminhao", s.getPlacaCaminhao());
+        m.put("modeloCaminhao",s.getModeloCaminhao());
+        m.put("atualizadoEm",  s.getAtualizadoEm());
+        return m;
     }
 
     @GetMapping("/viagem/{viagemId}")
