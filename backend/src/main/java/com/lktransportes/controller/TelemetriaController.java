@@ -53,8 +53,8 @@ public class TelemetriaController {
 
         Map<String, Object> resposta = new LinkedHashMap<>();
         resposta.put("motorista", motorista.getNome());
-        // O agente mostra o número na janela; null = nenhuma viagem em andamento.
         resposta.put("viagem", service.numeroDaViagemAtiva(motorista.getId()));
+        resposta.put("acao", service.consumirAcaoPendente(motorista.getId()));
         return resposta;
     }
 
@@ -97,6 +97,7 @@ public class TelemetriaController {
         m.put("pilotoAutomatico", s.getPilotoAutomatico());
         m.put("pausado", s.getPausado());
         m.put("emServico", s.getEmServico());
+        m.put("acaoPendente", s.getAcaoPendente());
         m.put("cargaNome", s.getCargaNome());
         m.put("cargaMassaKg", s.getCargaMassaKg());
         m.put("cidadeOrigem", s.getCidadeOrigem());
@@ -153,9 +154,9 @@ public class TelemetriaController {
 
         ByteArrayOutputStream saida = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(saida, StandardCharsets.UTF_8)) {
-            copiar(zip, "agente/LK-Telemetria.bat", "LK-Telemetria.bat");
-            copiar(zip, "agente/lk-telemetria.ps1", "lk-telemetria.ps1");
-            copiar(zip, "agente/LEIA-ME.txt", "LEIA-ME.txt");
+            copiar(zip, "agente/LK-Transportes.vbs",          "LK-Transportes.vbs");
+            copiar(zip, "agente/lk-telemetria-launcher.ps1",  "lk-telemetria-launcher.ps1");
+            copiar(zip, "agente/LEIA-ME.txt",                 "LEIA-ME.txt");
             escrever(zip, "lk-telemetria.json", config);
         }
 

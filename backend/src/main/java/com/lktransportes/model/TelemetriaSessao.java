@@ -44,6 +44,10 @@ public class TelemetriaSessao {
     private Boolean pilotoAutomatico;
     private Boolean pausado;
     private Boolean emServico;
+    private Boolean entregaFeita;
+
+    @Column(name = "acao_pendente", length = 60)
+    private String acaoPendente;
 
     @Column(length = 80) private String cargaNome;
     private Double cargaMassaKg;
@@ -101,6 +105,10 @@ public class TelemetriaSessao {
     public void setPausado(Boolean v) { this.pausado = v; }
     public Boolean getEmServico() { return emServico; }
     public void setEmServico(Boolean v) { this.emServico = v; }
+    public Boolean getEntregaFeita() { return entregaFeita; }
+    public void setEntregaFeita(Boolean v) { this.entregaFeita = v; }
+    public String getAcaoPendente() { return acaoPendente; }
+    public void setAcaoPendente(String v) { this.acaoPendente = v; }
     public String getCargaNome() { return cargaNome; }
     public void setCargaNome(String v) { this.cargaNome = v; }
     public Double getCargaMassaKg() { return cargaMassaKg; }

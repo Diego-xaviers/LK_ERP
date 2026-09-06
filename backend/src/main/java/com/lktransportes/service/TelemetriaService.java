@@ -39,11 +39,13 @@ public class TelemetriaService {
     private final EventoViagemRepository eventos;
     private final PostoRepository postos;
     private final MapaService mapa;
+    private final CaminhaoRepository caminhoes;
+    private final ViagemService viagemService;
 
     public TelemetriaService(UsuarioRepository usuarios, ViagemRepository viagens,
                              TelemetriaSessaoRepository sessoes, TelemetriaViagemRepository telemetriaViagens,
                              EventoViagemRepository eventos, PostoRepository postos,
-                             MapaService mapa) {
+                             MapaService mapa, CaminhaoRepository caminhoes, ViagemService viagemService) {
         this.usuarios = usuarios;
         this.viagens = viagens;
         this.sessoes = sessoes;
@@ -51,6 +53,8 @@ public class TelemetriaService {
         this.eventos = eventos;
         this.postos = postos;
         this.mapa = mapa;
+        this.caminhoes = caminhoes;
+        this.viagemService = viagemService;
     }
 
     // ------------------------------------------------------------------
@@ -98,10 +102,28 @@ public class TelemetriaService {
                     return nova;
                 });
 
-        Double posAnteriorX = sessao.getPosX();
-        Double posAnteriorZ = sessao.getPosZ();
+        Boolean eraServico  = sessao.getEmServico();
+        Boolean eraEntrega  = sessao.getEntregaFeita();
+        Double  posAnteriorX = sessao.getPosX();
+        Double  posAnteriorZ = sessao.getPosZ();
 
         aplicar(sessao, ping);
+
+        // Carga pega: cria + inicia viagem automaticamente
+        if (!Boolean.TRUE.equals(eraServico) && Boolean.TRUE.equals(ping.emServico)) {
+            criarViagemAuto(motorista, ping).ifPresent(v ->
+                sessao.setAcaoPendente("VIAGEM_CRIADA:" + v.getNumero()));
+        }
+
+        // Entrega feita: conclui a viagem ativa automaticamente
+        if (!Boolean.TRUE.equals(eraEntrega) && Boolean.TRUE.equals(ping.entregaFeita)) {
+            viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
+                v.setStatus(StatusViagem.CONCLUIDA);
+                viagens.save(v);
+                sessao.setAcaoPendente("ENTREGA_CONCLUIDA:" + v.getNumero());
+            });
+        }
+
         sessoes.save(sessao);
 
         // Consulta enxuta de propósito: o ping chega a cada 2 s e não precisa dos eventos.
@@ -109,6 +131,45 @@ public class TelemetriaService {
                 .ifPresent(viagem -> alimentarViagem(viagem, ping, posAnteriorX, posAnteriorZ));
 
         return sessao;
+    }
+
+    private Optional<Viagem> criarViagemAuto(Usuario motorista, TelemetriaPing ping) {
+        // Não cria se já tem viagem aberta
+        if (!viagens.viagensAbertasDoMotorista(motorista.getId()).isEmpty()) return Optional.empty();
+
+        // Dados mínimos obrigatórios
+        if (ping.cargaNome == null || ping.cargaNome.isBlank()) return Optional.empty();
+        if (ping.cidadeOrigem == null || ping.cidadeDestino == null)  return Optional.empty();
+
+        // Acha o caminhão pela placa; se não achar, pega o primeiro do motorista
+        Optional<Caminhao> caminhao = Optional.empty();
+        if (ping.placaCaminhao != null && !ping.placaCaminhao.isBlank()) {
+            caminhao = caminhoes.findByPlacaIgnoreCase(ping.placaCaminhao)
+                                .filter(c -> c.podeSerUsadoPor(motorista.getId()));
+        }
+        if (caminhao.isEmpty()) {
+            caminhao = caminhoes.findByDono(motorista).stream().findFirst();
+        }
+        if (caminhao.isEmpty()) return Optional.empty();
+
+        Viagem v = new Viagem();
+        v.setNumero(viagens.ultimoNumero() + 1);
+        v.setOrigem(ping.cidadeOrigem);
+        v.setDestino(ping.cidadeDestino);
+        v.setEmpresaRemetente(ping.empresaOrigem  != null ? ping.empresaOrigem  : "—");
+        v.setEmpresaDestinataria(ping.empresaDestino != null ? ping.empresaDestino : "—");
+        v.setCarga(ping.cargaNome);
+        v.setPesoKg(ping.cargaMassaKg != null
+                ? BigDecimal.valueOf(ping.cargaMassaKg).setScale(3, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO);
+        v.setMotorista(motorista);
+        v.setCaminhao(caminhao.get());
+        v = viagens.save(v);
+
+        viagemService.gerarDocumentos(v.getId());
+
+        v.iniciar();
+        return Optional.of(viagens.save(v));
     }
 
     private void aplicar(TelemetriaSessao s, TelemetriaPing p) {
@@ -131,6 +192,7 @@ public class TelemetriaService {
         s.setPilotoAutomatico(p.pilotoAutomatico);
         s.setPausado(p.pausado);
         s.setEmServico(p.emServico);
+        s.setEntregaFeita(p.entregaFeita);
         s.setCargaNome(p.cargaNome);
         s.setCargaMassaKg(p.cargaMassaKg);
         s.setCidadeOrigem(p.cidadeOrigem);
@@ -291,6 +353,15 @@ public class TelemetriaService {
     // ------------------------------------------------------------------
     // Consulta
     // ------------------------------------------------------------------
+
+    @Transactional
+    public String consumirAcaoPendente(UUID motoristaId) {
+        return sessoes.findByMotoristaId(motoristaId).map(s -> {
+            String acao = s.getAcaoPendente();
+            if (acao != null) { s.setAcaoPendente(null); sessoes.save(s); }
+            return acao;
+        }).orElse(null);
+    }
 
     @Transactional(readOnly = true)
     public Optional<TelemetriaSessao> sessaoDe(UUID motoristaId) {

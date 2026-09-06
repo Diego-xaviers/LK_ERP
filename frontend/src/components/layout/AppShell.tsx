@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import Icon from '../ui/Icon';
 import { useSessao } from '../../auth';
+import NotificacaoTelemetria from '../ui/NotificacaoTelemetria';
 import './AppShell.css';
 
 /** Sem o tipo explícito o TS infere uma união por item e perde `end`/`destaque`. */
@@ -111,6 +112,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="shell__main">{children}</main>
+      <NotificacaoTelemetria />
     </div>
   );
 }

@@ -1,0 +1,55 @@
+.ntelem {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  max-width: 460px;
+  animation: ntelem-in 0.25s ease;
+}
+
+@keyframes ntelem-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ntelem--verde  { background: #1a3a28; border: 1px solid #2ecc71; color: #eee; }
+.ntelem--amarelo { background: #3a2e10; border: 1px solid #f5a623; color: #eee; }
+
+.ntelem__icone { font-size: 1.4rem; flex-shrink: 0; }
+
+.ntelem__texto {
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.ntelem__btn {
+  background: rgba(255,255,255,.12);
+  border: none;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ntelem__btn:hover { background: rgba(255,255,255,.22); }
+
+.ntelem__fechar {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.5);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  flex-shrink: 0;
+}
+.ntelem__fechar:hover { color: #fff; }
