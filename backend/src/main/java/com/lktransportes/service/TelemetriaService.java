@@ -3,6 +3,7 @@ package com.lktransportes.service;
 import com.lktransportes.dto.TelemetriaPing;
 import com.lktransportes.model.*;
 import com.lktransportes.repository.*;
+import com.lktransportes.service.VtlogJobCache;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,11 +42,14 @@ public class TelemetriaService {
     private final MapaService mapa;
     private final CaminhaoRepository caminhoes;
     private final ViagemService viagemService;
+    private final PerfilRepository perfis;
+    private final VtlogJobCache vtlogCache;
 
     public TelemetriaService(UsuarioRepository usuarios, ViagemRepository viagens,
                              TelemetriaSessaoRepository sessoes, TelemetriaViagemRepository telemetriaViagens,
                              EventoViagemRepository eventos, PostoRepository postos,
-                             MapaService mapa, CaminhaoRepository caminhoes, ViagemService viagemService) {
+                             MapaService mapa, CaminhaoRepository caminhoes, ViagemService viagemService,
+                             PerfilRepository perfis, VtlogJobCache vtlogCache) {
         this.usuarios = usuarios;
         this.viagens = viagens;
         this.sessoes = sessoes;
@@ -55,6 +59,8 @@ public class TelemetriaService {
         this.mapa = mapa;
         this.caminhoes = caminhoes;
         this.viagemService = viagemService;
+        this.perfis = perfis;
+        this.vtlogCache = vtlogCache;
     }
 
     // ------------------------------------------------------------------
@@ -137,7 +143,26 @@ public class TelemetriaService {
         // Não cria se já tem viagem aberta
         if (!viagens.viagensAbertasDoMotorista(motorista.getId()).isEmpty()) return Optional.empty();
 
-        // Dados mínimos obrigatórios
+        // Complementa com dados do VTLog quando o ping não traz cargo/cidades
+        if (ping.cargaNome == null || ping.cidadeOrigem == null || ping.cidadeDestino == null) {
+            perfis.findByUsuarioId(motorista.getId())
+                  .map(p -> p.getSteamId())
+                  .filter(sid -> sid != null && !sid.isBlank())
+                  .flatMap(vtlogCache::buscar)
+                  .ifPresent(job -> {
+                      if (ping.cargaNome    == null) ping.cargaNome    = job.cargaNome();
+                      if (ping.cidadeOrigem == null) ping.cidadeOrigem = job.cidadeOrigem();
+                      if (ping.cidadeDestino== null) ping.cidadeDestino= job.cidadeDestino();
+                      if (ping.empresaOrigem== null) ping.empresaOrigem= job.empresaOrigem();
+                      if (ping.empresaDestino==null) ping.empresaDestino=job.empresaDestino();
+                      if (ping.cargaMassaKg == null && job.massaKg() != null)
+                          ping.cargaMassaKg = job.massaKg();
+                      if (ping.distanciaPlanejadaKm == null && job.distanciaKm() != null)
+                          ping.distanciaPlanejadaKm = job.distanciaKm();
+                  });
+        }
+
+        // Dados mínimos obrigatórios (mesmo após tentativa VTLog)
         if (ping.cargaNome == null || ping.cargaNome.isBlank()) return Optional.empty();
         if (ping.cidadeOrigem == null || ping.cidadeDestino == null)  return Optional.empty();
 

@@ -26,6 +26,7 @@ public class VtlogController {
 
     private final VtlogService vtlog;
     private final ObjectMapper mapper;
+    private final com.lktransportes.service.VtlogJobCache jobCache;
 
     // Cache em memória do último snapshot recebido pelo webhook do VTLog.
     private volatile String snapshotJson = null;
@@ -34,9 +35,11 @@ public class VtlogController {
     /** Último valor de fines conhecido por steam_id — para calcular deltas. */
     private final ConcurrentHashMap<String, Double> multasAnteriores = new ConcurrentHashMap<>();
 
-    public VtlogController(VtlogService vtlog, ObjectMapper mapper) {
+    public VtlogController(VtlogService vtlog, ObjectMapper mapper,
+                           com.lktransportes.service.VtlogJobCache jobCache) {
         this.vtlog = vtlog;
         this.mapper = mapper;
+        this.jobCache = jobCache;
     }
 
     @PostMapping("/entrega")
@@ -75,6 +78,7 @@ public class VtlogController {
         snapshotJson = payload;
         snapshotAtualizado = Instant.now();
         detectarMultas(payload);
+        atualizarCacheJobs(payload);
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -124,6 +128,62 @@ public class VtlogController {
             }
         }
         return -1;
+    }
+
+    /**
+     * Extrai dados do job de cada driver no snapshot e salva no VtlogJobCache.
+     * Tenta vários nomes de campo para compatibilidade com versões do VTLog.
+     */
+    private void atualizarCacheJobs(String payload) {
+        try {
+            JsonNode root = mapper.readTree(payload);
+            JsonNode drivers = root.path("drivers");
+            if (drivers.isMissingNode()) drivers = root.path("data");
+            if (!drivers.isArray()) return;
+
+            for (JsonNode d : drivers) {
+                String steamId = nomeOuNulo(d, "steam_id", "steamId");
+                if (steamId == null) continue;
+
+                boolean onJob = boolDeNode(d, "on_job", "is_on_job", "onJob");
+                if (!onJob) {
+                    jobCache.atualizar(steamId, null); // saiu de serviço
+                    continue;
+                }
+
+                String cargo    = nomeOuNulo(d, "cargo", "cargo_name", "cargo_id");
+                String origem   = nomeOuNulo(d, "source_city", "origin_city", "job_origin",    "source_city_real_name");
+                String destino  = nomeOuNulo(d, "destination_city", "dest_city", "job_destination", "destination_city_real_name");
+                String empOrig  = nomeOuNulo(d, "source_company", "origin_company",  "source_company_name");
+                String empDest  = nomeOuNulo(d, "destination_company", "dest_company", "destination_company_name");
+                Double massa    = numDeNode(d, "cargo_mass", "cargo_weight", "mass");
+                Integer dist    = intDeNode(d, "planned_distance", "job_distance", "distance");
+
+                jobCache.atualizar(steamId, new com.lktransportes.service.VtlogJobCache.DadosJob(
+                        cargo, origem, destino, empOrig, empDest, massa, dist));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private boolean boolDeNode(JsonNode d, String... campos) {
+        for (String c : campos) {
+            JsonNode v = d.path(c);
+            if (!v.isMissingNode() && v.isBoolean()) return v.asBoolean();
+        }
+        return false;
+    }
+
+    private Double numDeNode(JsonNode d, String... campos) {
+        for (String c : campos) {
+            JsonNode v = d.path(c);
+            if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
+        }
+        return null;
+    }
+
+    private Integer intDeNode(JsonNode d, String... campos) {
+        Double v = numDeNode(d, campos);
+        return v != null ? (int) Math.round(v) : null;
     }
 
     private String nomeOuNulo(JsonNode node, String... campos) {
