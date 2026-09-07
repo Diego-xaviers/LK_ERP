@@ -314,7 +314,7 @@ class Launcher : Form {
             tankPct < 0.15 ? C_RED : tankPct < 0.30 ? C_ORANGE : C_GREEN);
 
         using (var b = new SolidBrush(C_TEXT))
-            g.DrawString($"{(int)fuel} L  ({(int)(tankPct*100)}%)", fSm, b, bx, by + bh + 6);
+            g.DrawString(string.Format("{0} L  ({1}%)", (int)fuel, (int)(tankPct*100)), fSm, b, bx, by + bh + 6);
 
         // Odometro e emServico
         int iy = by + bh + 28;
@@ -367,7 +367,7 @@ class Launcher : Form {
 
             using (var b = new SolidBrush(pct > 0.10 ? c : C_DIM))
             using (var sf = new StringFormat { Alignment = StringAlignment.Center })
-                g.DrawString($"{vals[i]:F0}%", fTiny, b, new RectangleF(bx, by + 25, bw, 12), sf);
+                g.DrawString(string.Format("{0:F0}%", vals[i]), fTiny, b, new RectangleF(bx, by + 25, bw, 12), sf);
         }
     }
 
@@ -596,6 +596,8 @@ static class GdiExt {
 # ── Compilar se necessario ────────────────────────────────────────────────
 
 if (-not (Test-Path $exe)) {
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
     $refs = @(
         [System.Windows.Forms.Form].Assembly.Location,
         [System.Drawing.Graphics].Assembly.Location,
@@ -605,11 +607,9 @@ if (-not (Test-Path $exe)) {
         Add-Type -TypeDefinition $fonte -OutputAssembly $exe -OutputType WindowsApplication `
                  -ReferencedAssemblies $refs -Language CSharp -ErrorAction Stop
     } catch {
-        # Fallback: Remove EXE parcial e avisa
         Remove-Item $exe -Force -ErrorAction SilentlyContinue
-        [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
         [System.Windows.Forms.MessageBox]::Show(
-            "Nao foi possivel compilar o launcher.`n`nVerifique se o .NET Framework 4.6+ esta instalado`ne tente novamente.`n`nErro: $_",
+            "Nao foi possivel compilar o launcher.`n`nErro: $_",
             "LK Transportes", "OK", "Error")
         exit 1
     }
