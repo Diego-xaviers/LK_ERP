@@ -54,6 +54,7 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/telemetria/ping").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/telemetria/multas").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/vtlog/entrega").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/vtlog/live-snapshot").permitAll()
                     .requestMatchers("/actuator/health").permitAll()

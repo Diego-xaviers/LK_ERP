@@ -11,6 +11,12 @@ import jakarta.persistence.*;
 @DiscriminatorValue("MULTA")
 public class Multa extends EventoViagem {
 
+    @Column(name = "ajuste_vtlog")
+    private Boolean ajusteVtlog = false;
+
+    public boolean isAjusteVtlog() { return Boolean.TRUE.equals(ajusteVtlog); }
+    public void setAjusteVtlog(boolean v) { ajusteVtlog = v; }
+
     /** Anulável no schema por causa do SINGLE_TABLE — ver nota em Manutencao. */
     @Column(length = 500)
     private String motivo;

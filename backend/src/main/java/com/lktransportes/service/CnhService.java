@@ -91,7 +91,7 @@ public class CnhService {
         int multas = 0;
         int avarias = 0;
         for (EventoViagem e : v.getEventos()) {
-            if (e instanceof Multa) {
+            if (e instanceof Multa m && !m.isAjusteVtlog()) {
                 multas++;
             } else if (e instanceof Ocorrencia && e.getOrigem() == EventoViagem.Origem.TELEMETRIA) {
                 avarias++;

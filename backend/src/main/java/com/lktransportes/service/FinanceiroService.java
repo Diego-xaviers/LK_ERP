@@ -132,6 +132,7 @@ public class FinanceiroService {
 
     @Transactional
     public Pagamento pagar(UUID motoristaId, List<UUID> viagemIds, String observacao, Usuario gestor) {
+        usuarios.bloquear(motoristaId).orElseThrow();
         Usuario motorista = usuarios.findById(motoristaId).orElseThrow();
         List<Viagem> selecionadas = new ArrayList<>();
 

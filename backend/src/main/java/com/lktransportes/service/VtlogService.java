@@ -18,53 +18,24 @@ public class VtlogService {
     private final TelemetriaViagemRepository telemetrias;
     private final EventoViagemRepository eventos;
     private final ViagemService viagemService;
+    private final MultasService multas;
+    private final UsuarioRepository usuarios;
 
     @Value("${lk.vtlog-secret:}")
     private String vtlogSecret;
 
     public VtlogService(PerfilRepository perfis, ViagemRepository viagens,
                         TelemetriaViagemRepository telemetrias, EventoViagemRepository eventos,
-                        ViagemService viagemService) {
+                        ViagemService viagemService, MultasService multas, UsuarioRepository usuarios) {
         this.perfis = perfis;
         this.viagens = viagens;
         this.telemetrias = telemetrias;
         this.eventos = eventos;
         this.viagemService = viagemService;
+        this.multas = multas;
+        this.usuarios = usuarios;
     }
 
-    /** Chamado pelo VtlogController quando detecta aumento de fines no snapshot ao vivo. */
-    @Transactional
-    public void registrarMultaVtlog(String steamId, double valor) {
-        Optional<Perfil> perfilOpt = perfis.findBySteamId(steamId);
-        if (perfilOpt.isEmpty()) return;
-
-        Usuario motorista = perfilOpt.get().getUsuario();
-        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
-            Multa multa = new Multa();
-            multa.setViagem(v);
-            multa.setMotivo("Multa detectada automaticamente via VTLog");
-            multa.setValor(BigDecimal.valueOf(valor).setScale(2, java.math.RoundingMode.HALF_UP));
-            multa.setOrigem(EventoViagem.Origem.TELEMETRIA);
-            eventos.save(multa);
-        });
-    }
-
-    /** Chamado pelo VtlogController quando detecta pagamento de pedágio no snapshot ao vivo. */
-    @Transactional
-    public void registrarPedagioVtlog(String steamId, double valor) {
-        Optional<Perfil> perfilOpt = perfis.findBySteamId(steamId);
-        if (perfilOpt.isEmpty()) return;
-
-        Usuario motorista = perfilOpt.get().getUsuario();
-        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
-            Pedagio pedagio = new Pedagio();
-            pedagio.setViagem(v);
-            pedagio.setLocal("Pedágio detectado automaticamente via VTLog");
-            pedagio.setValor(BigDecimal.valueOf(valor).setScale(2, java.math.RoundingMode.HALF_UP));
-            pedagio.setOrigem(EventoViagem.Origem.TELEMETRIA);
-            eventos.save(pedagio);
-        });
-    }
 
     public void validarSegredo(String cabecalho) {
         if (vtlogSecret.isBlank() || !vtlogSecret.equals(cabecalho)) {
@@ -74,26 +45,55 @@ public class VtlogService {
 
     @Transactional
     public Viagem registrarEntrega(EntregaVtlog req) {
+        if (req.jobId() == null || !req.jobId().matches("[0-9]{1,20}"))
+            throw new IllegalArgumentException("Job VTLog inválido.");
+        if (req.totalMultas() != null) MultasService.dinheiro(req.totalMultas());
+        Perfil perfil = perfis.findBySteamId(req.steamId())
+                .orElseThrow(() -> new IllegalArgumentException("Steam ID não encontrado. Cadastre no perfil."));
+        Usuario motorista = perfil.getUsuario();
+        usuarios.bloquear(motorista.getId()).orElseThrow();
         // Idempotência: job já registrado retorna a viagem existente
         Optional<Viagem> existentePorJob = viagens.findByVtlogJobId(req.jobId());
         if (existentePorJob.isPresent()) {
-            throw new IllegalStateException(
-                    "Job " + req.jobId() + " já registrado na viagem #" + existentePorJob.get().getNumero() + ".");
+            Viagem v = existentePorJob.get();
+            if (!v.getMotorista().getId().equals(motorista.getId()))
+                throw new IllegalArgumentException("Job vinculado a outro motorista.");
+            multas.conferir(v, req.totalMultas());
+            if (v.getStatus() == StatusViagem.EM_ANDAMENTO) return concluirViagemAtiva(v, req);
+            return v;
         }
-
-        Perfil perfil = perfis.findBySteamId(req.steamId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Steam ID não encontrado. O motorista precisa cadastrar o Steam ID no perfil."));
-        Usuario motorista = perfil.getUsuario();
-
-        // Se existe viagem EM_ANDAMENTO, enriquece com dados do VTLog e conclui corretamente
-        Optional<Viagem> viagemAtiva = viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO);
-        if (viagemAtiva.isPresent()) {
-            return concluirViagemAtiva(viagemAtiva.get(), req);
+        // Não associa um job antigo automaticamente à carga que estiver ativa agora.
+        var mesmaRota = viagens.findByMotoristaIdOrderByCriadaEmDesc(motorista.getId()).stream()
+            .filter(v -> v.getVtlogJobId() == null && v.getStatus() != StatusViagem.CRIADA)
+            .filter(v -> igual(v.getOrigem(), req.origem()) && igual(v.getDestino(), req.destino()) && igual(v.getCarga(), req.carga()))
+            .toList();
+        var candidatas = mesmaRota.stream().filter(v -> correspondeAoHorario(v, req)).toList();
+        if (candidatas.isEmpty() && !mesmaRota.isEmpty())
+            throw new IllegalStateException("Job sem correspondência segura de horário. Conferir vínculo com a viagem.");
+        if (candidatas.size() > 1)
+            throw new IllegalStateException("Mais de uma viagem compatível com o job. É necessário conferir o vínculo.");
+        if (candidatas.size() == 1) {
+            Viagem v = candidatas.getFirst();
+            v.setVtlogJobId(req.jobId());
+            multas.conferir(v, req.totalMultas());
+            if (v.getStatus() == StatusViagem.EM_ANDAMENTO) return concluirViagemAtiva(v, req);
+            return viagens.save(v);
         }
 
         // Sem viagem ativa: cria do zero (entrega não precedida de agente PS1)
         return criarViagemConcluida(motorista, req);
+    }
+
+    private boolean igual(String a, String b) {
+        return a != null && b != null && !a.isBlank() && a.strip().equalsIgnoreCase(b.strip());
+    }
+
+    private boolean correspondeAoHorario(Viagem v, EntregaVtlog req) {
+        if (req.inicioEpochMs() == null || req.fimEpochMs() == null || v.getIniciadaEm() == null) return false;
+        if (req.inicioEpochMs() > req.fimEpochMs()) return false;
+        var inicio = java.time.Instant.ofEpochMilli(req.inicioEpochMs()).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        var fim = java.time.Instant.ofEpochMilli(req.fimEpochMs()).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        return !v.getIniciadaEm().isBefore(inicio.minusMinutes(5)) && !v.getIniciadaEm().isAfter(fim.plusMinutes(5));
     }
 
     /**
@@ -140,6 +140,7 @@ public class VtlogService {
             telemetrias.save(tv);
         });
 
+        multas.conferir(v, req.totalMultas());
         // Finaliza pelo caminho completo: conferência, crédito de frete, etc.
         viagemService.finalizar(v.getId(), null, null);
 
@@ -180,6 +181,8 @@ public class VtlogService {
         tel.setDanoRegistradoPct(req.danoPct());
         telemetrias.save(tel);
 
+        multas.conferir(v, req.totalMultas());
+
         viagemService.finalizar(v.getId(), null, null);
 
         return viagens.findById(v.getId()).orElse(v);
@@ -197,6 +200,9 @@ public class VtlogService {
             Double distanciaKm,
             Double combustivelGastoL,
             Double danoPct,
-            BigDecimal valorFrete
+            BigDecimal valorFrete,
+            BigDecimal totalMultas,
+            Long inicioEpochMs,
+            Long fimEpochMs
     ) {}
 }

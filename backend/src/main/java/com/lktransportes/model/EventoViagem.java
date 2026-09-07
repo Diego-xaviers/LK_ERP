@@ -38,6 +38,12 @@ public abstract class EventoViagem {
     @Column(precision = 14, scale = 2)
     private BigDecimal valor;
 
+    @Column(name = "chave_externa", unique = true, length = 100)
+    private String chaveExterna;
+
+    public String getChaveExterna() { return chaveExterna; }
+    public void setChaveExterna(String v) { chaveExterna = v; }
+
     /**
      * Quem criou o evento. Coluna nova e anulável de propósito: os eventos que já
      * existiam no banco vêm com null e são tratados como MANUAL na leitura.

@@ -91,6 +91,22 @@ public class Viagem {
     @Column(name = "vtlog_job_id", unique = true, length = 20)
     private String vtlogJobId;
 
+    @Column(name = "agente_job_id", unique = true)
+    private UUID agenteJobId;
+
+    @Column(name = "multas_vtlog", precision = 14, scale = 2)
+    private BigDecimal multasVtlog;
+
+    @Column(name = "pendencia_multas", length = 600)
+    private String pendenciaMultas;
+
+    public UUID getAgenteJobId() { return agenteJobId; }
+    public void setAgenteJobId(UUID v) { agenteJobId = v; }
+    public BigDecimal getMultasVtlog() { return multasVtlog; }
+    public void setMultasVtlog(BigDecimal v) { multasVtlog = v; }
+    public String getPendenciaMultas() { return pendenciaMultas; }
+    public void setPendenciaMultas(String v) { pendenciaMultas = v; }
+
     @Column(name = "houve_avaria")
     private Boolean houveAvaria;
 

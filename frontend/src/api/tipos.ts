@@ -58,6 +58,7 @@ export interface Viagem {
   houveAvaria?: boolean;
   conferencia?: 'APROVADA' | 'RETIDA' | 'LIBERADA';
   motivosConferencia?: string;
+  pendenciaMultas?: string;
   liberadaParaPagamento: boolean;
   liberadaPor?: string;
   liberadaEm?: string;

@@ -2,6 +2,14 @@ package com.lktransportes.dto;
 
 /** Espelho exato do JSON que o agente PowerShell envia. */
 public class TelemetriaPing {
+    /** Versão 2 envia eventos duráveis, com confirmação individual. */
+    public Integer protocolo;
+    public java.util.UUID agenteJobId;
+    public java.util.List<MultaAgente> multas;
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public java.util.List<java.util.UUID> multasConfirmadas = java.util.List.of();
+    public record MultaAgente(java.util.UUID id, java.util.UUID agenteJobId,
+                              java.math.BigDecimal valor, java.time.Instant ocorridoEm) {}
     public Boolean jogoAtivo;
     public Boolean pausado;
     public Integer tempoJogoMin;
@@ -55,7 +63,7 @@ public class TelemetriaPing {
     public Long tollAccumulator;
     public Long ferryAccumulator;
 
-    /** Flags de evento financeiro — true no ping imediatamente após o evento (offsets 4304/4305). */
+    /** O plugin alterna estes sinais em CADA evento; não são pulsos true/false. */
     public Boolean fined;
     public Boolean tollgate;
 

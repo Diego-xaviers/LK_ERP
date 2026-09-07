@@ -21,6 +21,7 @@ public class ViagemController {
     private final ViagemRepository viagens;
     private final OficinaRepository oficinas;
     private final EventoViagemRepository eventos;
+    private final com.lktransportes.service.MultasService multas;
 
     private final com.lktransportes.security.SessaoAtual sessao;
     private final com.lktransportes.repository.UsuarioRepository usuarios;
@@ -28,13 +29,15 @@ public class ViagemController {
     public ViagemController(ViagemService service, ViagemRepository viagens,
                             OficinaRepository oficinas, EventoViagemRepository eventos,
                             com.lktransportes.security.SessaoAtual sessao,
-                            com.lktransportes.repository.UsuarioRepository usuarios) {
+                            com.lktransportes.repository.UsuarioRepository usuarios,
+                            com.lktransportes.service.MultasService multas) {
         this.service = service;
         this.viagens = viagens;
         this.oficinas = oficinas;
         this.eventos = eventos;
         this.sessao = sessao;
         this.usuarios = usuarios;
+        this.multas = multas;
     }
 
     /** Viagem é dado pessoal do motorista: ou é dele, ou quem pergunta é gestor. */
@@ -43,6 +46,13 @@ public class ViagemController {
     }
 
     // ---------- Consulta ----------
+
+    @PostMapping("/{id}/multas/conferir")
+    public ViagemResponse conferirMultas(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        sessao.exigirGestor();
+        multas.confirmar(id, usuarios.findById(sessao.id()).orElseThrow(), body.get("observacao"));
+        return service.buscar(id);
+    }
 
     /** Listagem completa, com eventos e documentos de todo mundo — só gestor. */
     @GetMapping

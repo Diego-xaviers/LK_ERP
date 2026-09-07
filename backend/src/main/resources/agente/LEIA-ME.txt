@@ -1,61 +1,31 @@
-=====================================================
-  LK Transportes - Agente de Telemetria
-=====================================================
+LK Transportes - Telemetria para Windows (protocolo 2)
 
-O QUE E ISSO
-------------
-Um aplicativo que le o que esta acontecendo no Euro Truck
-Simulator 2 e manda para o painel da LK: velocidade,
-combustivel, dano, distancia e abastecimentos.
+1. Instale o plugin RenCloud scs-telemetry.dll em:
+   Euro Truck Simulator 2\bin\win_x64\plugins\scs-telemetry.dll
+   Fonte: https://github.com/RenCloud/scs-sdk-plugin/releases
+2. Extraia TODOS os arquivos do ZIP na mesma pasta.
+3. Abra LK-Telemetria.bat e mantenha a janela aberta enquanto dirige.
+   O BAT usa os arquivos PS1 de apoio. Nao ha launcher ou VBS.
+4. Abra o jogo. Se ja estiver com carga, o agente identifica a sessao atual.
 
-Com ele ligado, sua viagem no painel se preenche sozinha
-enquanto voce dirige.
+MULTAS
+O agente observa o jogo a cada 100 ms. Envia pela rede a cada 2 segundos,
+sem interromper essa observacao. Multas ficam guardadas em:
+%LOCALAPPDATA%\LK-Transportes\telemetria
+Elas so saem da fila apos confirmacao individual do servidor. Se a conexao
+cair, mantenha o agente aberto; ele tenta novamente. Ao reabrir o agente,
+a fila e recuperada. Nao apague essa pasta com multas pendentes.
 
+O total do VTLog e conferido quando a entrega chega pelo bot. Diferencas
+positivas geram um ajuste identificado. Totais divergentes ficam para a
+gestao revisar antes do acerto. Eventos anteriores ao inicio do agente ou
+ocorridos juntos entre duas leituras dependem dessa conferencia.
 
-ANTES DE COMECAR
-----------------
-Voce precisa do plugin de telemetria instalado no jogo:
+Sem viagem vinculada, a multa continua pendente; ela nao sera atribuida
+a outra carga. Se persistir, avise a gestao. O pacote antigo precisa ser
+substituido por este pacote completo. O codigo nao altera a regra da
+comissao por quilometro.
 
-  Euro Truck Simulator 2\bin\win_x64\plugins\scs-telemetry.dll
-
-Se nao existir, baixe em:
-  https://github.com/RenCloud/scs-sdk-plugin/releases
-
-
-COMO USAR
----------
-1. Descompacte esta pasta em qualquer lugar (ex.: Documentos).
-   IMPORTANTE: descompacte de verdade, nao rode de dentro do .zip.
-
-2. De dois cliques em  LK-Transportes.vbs
-
-   Na PRIMEIRA abertura, o aplicativo compila o painel (leva
-   alguns segundos). Nas proximas vezes abre instantaneamente.
-
-3. O icone LK aparece na barra de tarefas. Clique duas vezes
-   para abrir o painel de telemetria.
-   Para fechar a janela: clique [x] — o agente continua rodando.
-   Para encerrar: botao direito no icone > Encerrar agente.
-
-4. Abra o ETS2, entre numa partida e pegue carga.
-   A viagem abre sozinha no painel!
-
-
-PERGUNTAS COMUNS
-----------------
-"ETS2 nao detectado" (ponto cinza)
-   O jogo esta fechado, ou o scs-telemetry.dll nao esta instalado.
-
-"Token invalido"
-   Voce gerou um token novo no painel. Baixe o pacote de novo.
-
-O Windows bloqueou o arquivo
-   Clique com o botao direito no VBS > Propriedades > Desbloquear.
-
-Erro na compilacao (primeira abertura)
-   Requer .NET Framework 4.6+ (incluido no Windows 10/11).
-   Acesse Windows Update e instale as atualizacoes pendentes.
-
-
-O agente so LE a memoria do jogo e envia para o painel da LK.
-Ele nao modifica o jogo, o save nem o computador.
+TOKEN INVALIDO: baixe novamente pelo painel.
+JOGO NAO DETECTADO: confira o plugin e entre em uma partida.
+FILA COM ERRO: preserve os arquivos e avise a gestao.

@@ -128,8 +128,11 @@ public class ViagemService {
 
     @Transactional
     public ViagemResponse finalizar(UUID id, String observacao, Boolean houveAvaria) {
+        usuarios.bloquear(viagens.findById(id).orElseThrow().getMotorista().getId()).orElseThrow();
         Viagem v = viagens.findWithEventosById(id).orElseThrow();
         v.finalizar(observacao, houveAvaria);
+        if (v.getAgenteJobId() != null && v.getMultasVtlog() == null && v.getPendenciaMultas() == null)
+            v.setPendenciaMultas(MultasService.AGUARDANDO);
 
         // Confere contra a telemetria antes de gravar: é o que decide se a viagem
         // pontua e pode ser paga, ou se fica retida esperando um gestor.
@@ -220,7 +223,7 @@ public class ViagemService {
     /** Viagens seguradas pela conferência, esperando decisão do gestor. */
     @Transactional(readOnly = true)
     public List<ViagemResponse> retidas() {
-        return viagens.findByConferenciaOrderByFinalizadaEmDesc(Viagem.Conferencia.RETIDA).stream()
+        return viagens.pendentesDeConferencia().stream()
                 .map(v -> ViagemResponse.de(v, documentos.findByViagemId(v.getId())))
                 .toList();
     }

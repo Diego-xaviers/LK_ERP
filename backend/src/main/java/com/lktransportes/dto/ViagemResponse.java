@@ -42,6 +42,7 @@ public record ViagemResponse(
         /** APROVADA, RETIDA ou LIBERADA. Nulo enquanto a viagem não terminou. */
         String conferencia,
         String motivosConferencia,
+        String pendenciaMultas,
         boolean liberadaParaPagamento,
         String liberadaPor,
         java.time.LocalDateTime liberadaEm,
@@ -73,7 +74,8 @@ public record ViagemResponse(
                 v.getObservacaoFinal(), v.getHouveAvaria(),
                 v.getConferencia() == null ? null : v.getConferencia().name(),
                 v.getMotivosConferencia(),
-                v.liberadaParaPagamento(),
+                v.getPendenciaMultas(),
+                v.liberadaParaPagamento() && v.getPendenciaMultas() == null,
                 v.getLiberadaPor() == null ? null : v.getLiberadaPor().getNome(),
                 v.getLiberadaEm(), v.getObservacaoLiberacao(),
                 v.totalDespesas(),

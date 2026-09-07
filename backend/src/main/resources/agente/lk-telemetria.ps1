@@ -107,6 +107,7 @@ function ConvertTo-Payload([byte[]] $b) {
 
         # Flags de evento financeiro (Zone 12, offsets 4304-4305)
         fined    = (Get-Bool $b 4304)
+        inicioJob = (Get-UInt $b 444)
         tollgate = (Get-Bool $b 4305)
 
         cargaNome      = (Get-Texto $b 2620)
@@ -123,7 +124,7 @@ function ConvertTo-Payload([byte[]] $b) {
         modeloCaminhao = (Get-Texto $b 2492)
         jogo = (Get-UInt $b 52)   # 1 = ETS2, 2 = ATS
 
-        # Acumuladores financeiros (int64, aumentam durante o job)
+        # Valores do ultimo evento (int64), NAO sao acumuladores.
         # fineAmount offset 4216, tollgatePayAmount offset 4224
         fineAccumulator  = (Get-Int64 $b 4216)
         tollAccumulator  = (Get-Int64 $b 4224)
@@ -176,40 +177,72 @@ function Write-Estado([string] $texto, [string] $cor) {
     }
 }
 
-while ($true) {
-    try {
+. (Join-Path $raiz 'lk-multas.ps1')
+$hash = [Security.Cryptography.SHA256]::Create()
+try { $conta = ([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($cfg.servidor + '|' + $cfg.motoristaId)))).Replace('-', '') }
+finally { $hash.Dispose() }
+$pastaFila = Join-Path $env:LOCALAPPDATA ('LK-Transportes\telemetria\' + $conta)
+[IO.Directory]::CreateDirectory($pastaFila) | Out-Null
+$arquivoFila = Join-Path $pastaFila 'multas.json'
+$mutex = New-Object Threading.Mutex($false, ('Local\LKMultas-' + $conta))
+if (-not $mutex.WaitOne(0)) { Write-Host 'O agente ja esta aberto.'; exit 1 }
+$worker = $null
+$handle = $null
+try {
+    # Se a fila estiver corrompida, para sem apagar eventos nao confirmados.
+    $estado = if (Test-Path $arquivoFila) { Get-Content $arquivoFila -Raw -Encoding UTF8 | ConvertFrom-Json } else { New-LkEstado }
+    $proximoEnvio = [DateTime]::UtcNow
+    $payload = $null
+    while ($true) {
+        $payload = $null
         $bytes = Read-Telemetria
-        if ($null -eq $bytes) {
-            Write-Estado 'Aguardando o Euro Truck Simulator 2 abrir...' 'DarkGray'
-        } else {
-            $payload = ConvertTo-Payload $bytes
-            if (-not $payload.jogoAtivo) {
-                Write-Estado 'Jogo aberto, aguardando entrar na partida...' 'DarkGray'
-            } else {
-                $json = $payload | ConvertTo-Json -Depth 5 -Compress
-                $corpo = [System.Text.Encoding]::UTF8.GetBytes($json)
-                $resp = Invoke-RestMethod -Method Post -Uri "$($cfg.servidor)/telemetria/ping" `
-                    -Headers @{ 'X-Telemetria-Token' = $cfg.token } `
-                    -ContentType 'application/json; charset=utf-8' -Body $corpo -TimeoutSec 10
-
-                if ($resp.viagem) {
-                    Write-Estado ("Enviando - viagem #{0} - {1} km/h" -f $resp.viagem, $payload.velocidadeKmh) 'Green'
-                } else {
-                    Write-Estado 'Conectado, mas sem viagem em andamento no painel.' 'Yellow'
-                }
-                # Debug financeiro - mostra sempre que houver valor
-                if ($payload.fineAccumulator -gt 0 -or $payload.tollAccumulator -gt 0) {
-                    Write-Host ("  [FIN] multa={0} pedagio={1} balsa={2}" -f $payload.fineAccumulator, $payload.tollAccumulator, $payload.ferryAccumulator) -ForegroundColor Magenta
-                }
+        if ($null -ne $bytes) {
+            $atual = ConvertTo-Payload $bytes
+            if ($atual.jogoAtivo) {
+                if (Update-LkMultas $estado $atual) { Save-LkEstado $estado $arquivoFila }
+                $payload = $atual
             }
         }
-    } catch {
-        $msg = $_.Exception.Message
-        if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 401) {
-            Write-Estado 'Token invalido. Baixe o pacote novamente pelo painel.' 'Red'
-        } else {
-            Write-Estado "Falha ao falar com o servidor: $msg" 'Red'
+        if ($handle -and $handle.IsCompleted) {
+            try {
+                $respostas = $worker.EndInvoke($handle)
+                if ($worker.HadErrors) { throw 'Falha de conexao. Multas guardadas para reenvio.' }
+                $resp = @($respostas)[-1]
+                if (Confirm-LkMultas $estado $resp.multasConfirmadas) { Save-LkEstado $estado $arquivoFila }
+                if ($resp.atualizarAgente) { Write-Estado 'Atualize o pacote do agente pelo painel.' 'Yellow' }
+                elseif ($resp.viagem) { Write-Estado ("Conectado - viagem #{0} - multas pendentes: {1}" -f $resp.viagem, @($estado.pendentes).Count) 'Green' }
+                else { Write-Estado ('Conectado - aguardando viagem. Multas pendentes: ' + @($estado.pendentes).Count) 'Yellow' }
+            } catch { Write-Estado 'Sem confirmacao do servidor. Multas preservadas para reenvio.' 'Yellow' }
+            finally { $worker.Dispose(); $worker = $null; $handle = $null }
         }
+        if (-not $handle -and [DateTime]::UtcNow -ge $proximoEnvio) {
+            if ($payload -or @($estado.pendentes).Count -gt 0) {
+                # A rede roda em paralelo: timeout HTTP nao interrompe a captura local.
+                if ($payload) {
+                    $envio = @{} + $payload
+                    $envio.Remove('inicioJob')
+                    $envio.protocolo = 2
+                    $envio.agenteJobId = $estado.jobId
+                    $envio.multas = @($estado.pendentes | Select-Object -First 100)
+                    $json = $envio | ConvertTo-Json -Depth 8 -Compress
+                    $uri = $cfg.servidor + '/telemetria/ping'
+                } else {
+                    $json = ConvertTo-Json -InputObject @($estado.pendentes | Select-Object -First 100) -Depth 8 -Compress
+                    $uri = $cfg.servidor + '/telemetria/multas'
+                }
+                $worker = [PowerShell]::Create()
+                [void]$worker.AddScript({ param($uri, $token, $json)
+                    $ErrorActionPreference = 'Stop'
+                    Invoke-RestMethod -Method Post -Uri $uri -Headers @{ 'X-Telemetria-Token' = $token } `
+                        -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($json)) -TimeoutSec 10
+                }).AddArgument($uri).AddArgument($cfg.token).AddArgument($json)
+                $handle = $worker.BeginInvoke()
+            } else { Write-Estado 'Aguardando entrar no jogo...' 'DarkGray' }
+            $proximoEnvio = [DateTime]::UtcNow.AddSeconds([Math]::Max(2, $Intervalo))
+        }
+        Start-Sleep -Milliseconds 100
     }
-    Start-Sleep -Seconds $Intervalo
+} finally {
+    if ($worker) { $worker.Stop(); $worker.Dispose() }
+    $mutex.ReleaseMutex(); $mutex.Dispose()
 }

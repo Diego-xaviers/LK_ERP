@@ -60,10 +60,20 @@ public class TelemetriaController {
         resposta.put("motorista", motorista.getNome());
         resposta.put("viagem", service.numeroDaViagemAtiva(motorista.getId()));
         resposta.put("acao", service.consumirAcaoPendente(motorista.getId()));
+        resposta.put("multasConfirmadas", corpo.multasConfirmadas);
+        resposta.put("atualizarAgente", corpo.protocolo == null || corpo.protocolo < 2);
         return resposta;
     }
 
     // ---------------- Consulta (chamada pelo painel) ----------------
+
+    /** Reenvio de recibos mesmo com o jogo fechado; não altera presença ou estado da viagem. */
+    @PostMapping("/multas")
+    public Map<String, Object> multas(@RequestHeader(value = "X-Telemetria-Token", required = false) String token,
+            @RequestBody List<TelemetriaPing.MultaAgente> lote) {
+        Usuario motorista = service.autenticar(token);
+        return Map.of("multasConfirmadas", service.receberMultas(motorista.getId(), lote));
+    }
 
     @GetMapping("/atual/{motoristaId}")
     public ResponseEntity<Map<String, Object>> atual(@PathVariable UUID motoristaId) {
@@ -192,13 +202,15 @@ public class TelemetriaController {
                   "servidor": "%s",
                   "token": "%s",
                   "motorista": "%s"
+                  ,"motoristaId": "%s"
                 }
-                """.formatted(urlDaApi, token, motorista.getNome().replace("\"", ""));
+                """.formatted(urlDaApi, token, motorista.getNome().replace("\"", ""), motoristaId);
 
         ByteArrayOutputStream saida = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(saida, StandardCharsets.UTF_8)) {
             copiar(zip, "agente/LK-Telemetria.bat",   "LK-Telemetria.bat");
             copiar(zip, "agente/lk-telemetria.ps1",  "lk-telemetria.ps1");
+            copiar(zip, "agente/lk-multas.ps1", "lk-multas.ps1");
             copiar(zip, "agente/LEIA-ME.txt",                "LEIA-ME.txt");
             escrever(zip, "lk-telemetria.json", config);
         }

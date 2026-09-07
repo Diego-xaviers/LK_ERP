@@ -24,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class TelemetriaService {
 
+    public java.util.List<UUID> receberMultas(UUID motorista, java.util.List<TelemetriaPing.MultaAgente> lote) {
+        return multasService.receber(motorista, lote);
+    }
+
     /** Nome do posto usado quando a telemetria detecta abastecimento fora de posto cadastrado. */
     static final String POSTO_NAO_IDENTIFICADO = "Posto não identificado (telemetria)";
 
@@ -35,7 +39,6 @@ public class TelemetriaService {
     private static final double SALTO_METROS = 1000.0;
 
     /** Último estado do flag financeiro — detecta borda de subida (false→true). */
-    private final ConcurrentHashMap<UUID, Boolean> ultimoFined    = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Boolean> ultimoTollgate = new ConcurrentHashMap<>();
 
     private final UsuarioRepository usuarios;
@@ -49,12 +52,13 @@ public class TelemetriaService {
     private final ViagemService viagemService;
     private final PerfilRepository perfis;
     private final VtlogJobCache vtlogCache;
+    private final MultasService multasService;
 
     public TelemetriaService(UsuarioRepository usuarios, ViagemRepository viagens,
                              TelemetriaSessaoRepository sessoes, TelemetriaViagemRepository telemetriaViagens,
                              EventoViagemRepository eventos, PostoRepository postos,
                              MapaService mapa, CaminhaoRepository caminhoes, ViagemService viagemService,
-                             PerfilRepository perfis, VtlogJobCache vtlogCache) {
+                             PerfilRepository perfis, VtlogJobCache vtlogCache, MultasService multasService) {
         this.usuarios = usuarios;
         this.viagens = viagens;
         this.sessoes = sessoes;
@@ -66,6 +70,7 @@ public class TelemetriaService {
         this.viagemService = viagemService;
         this.perfis = perfis;
         this.vtlogCache = vtlogCache;
+        this.multasService = multasService;
     }
 
     // ------------------------------------------------------------------
@@ -106,6 +111,7 @@ public class TelemetriaService {
 
     @Transactional
     public TelemetriaSessao registrar(Usuario motorista, TelemetriaPing ping) {
+        usuarios.bloquear(motorista.getId()).orElseThrow();
         TelemetriaSessao sessao = sessoes.findByMotoristaId(motorista.getId())
                 .orElseGet(() -> {
                     TelemetriaSessao nova = new TelemetriaSessao();
@@ -121,30 +127,39 @@ public class TelemetriaService {
         aplicar(sessao, ping);
 
         // Carga pega: cria + inicia viagem automaticamente
-        if (!Boolean.TRUE.equals(eraServico) && Boolean.TRUE.equals(ping.emServico)) {
+        if (Boolean.TRUE.equals(ping.emServico)
+                && (ping.agenteJobId == null || viagens.findByAgenteJobId(ping.agenteJobId).isEmpty())) {
             criarViagemAuto(motorista, ping).ifPresent(v ->
                 sessao.setAcaoPendente("VIAGEM_CRIADA:" + v.getNumero()));
         }
 
-        // Entrega feita: conclui a viagem ativa pelo caminho completo
-        if (!Boolean.TRUE.equals(eraEntrega) && Boolean.TRUE.equals(ping.entregaFeita)) {
+        // Vincula a sessão local à viagem antes de confirmar qualquer recibo.
+        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
+            if (ping.agenteJobId != null && v.getAgenteJobId() == null
+                    && Boolean.TRUE.equals(ping.emServico) && ping.cargaNome != null
+                    && ping.cidadeOrigem != null && ping.cidadeDestino != null
+                    && !divergem(v.getCarga(), ping.cargaNome)
+                    && !divergem(v.getOrigem(), ping.cidadeOrigem)
+                    && !divergem(v.getDestino(), ping.cidadeDestino)) {
+                v.setAgenteJobId(ping.agenteJobId);
+                viagens.saveAndFlush(v);
+            }
+            if (ping.agenteJobId == null || ping.agenteJobId.equals(v.getAgenteJobId()))
+                alimentarViagem(v, ping, posAnteriorX, posAnteriorZ);
+        });
+        ping.multasConfirmadas = multasService.receber(motorista.getId(), ping.multas);
+
+        // O plugin alterna jobDelivered, assim como fined. Só finaliza a viagem vinculada.
+        if (eraEntrega != null && ping.entregaFeita != null && !eraEntrega.equals(ping.entregaFeita)) {
             viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
+                if (ping.agenteJobId != null && !ping.agenteJobId.equals(v.getAgenteJobId())) return;
                 int numero = v.getNumero();
-                try {
-                    viagemService.finalizar(v.getId(), null, null);
-                } catch (Exception e) {
-                    // finalizar() já lança se status != EM_ANDAMENTO — ignora caso de corrida
-                    return;
-                }
+                viagemService.finalizar(v.getId(), null, null);
                 sessao.setAcaoPendente("ENTREGA_CONCLUIDA:" + numero);
             });
         }
 
         sessoes.save(sessao);
-
-        // Consulta enxuta de propósito: o ping chega a cada 2 s e não precisa dos eventos.
-        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO)
-                .ifPresent(viagem -> alimentarViagem(viagem, ping, posAnteriorX, posAnteriorZ));
 
         return sessao;
     }
@@ -285,7 +300,6 @@ public class TelemetriaService {
 
         detectarAbastecimento(viagem, tv, p);
         detectarAvaria(viagem, tv, danoAgora);
-        detectarMultaAgente(viagem, viagem.getMotorista().getId(), p);
         detectarPedagioAgente(viagem, viagem.getMotorista().getId(), p);
         registrarSinais(tv, p, posAnteriorX, posAnteriorZ);
         conferirComDeclarado(viagem, tv, p);
@@ -325,21 +339,6 @@ public class TelemetriaService {
 
             tv.setLitrosAbastecidos(tv.getLitrosAbastecidos() + litros);
         }
-    }
-
-    private void detectarMultaAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        boolean flagAtual = Boolean.TRUE.equals(p.fined);
-        Boolean flagAnterior = ultimoFined.put(motoristaId, flagAtual);
-        // borda de subida: era false (ou nunca visto) e agora é true
-        if (!flagAtual || Boolean.TRUE.equals(flagAnterior)) return;
-        if (p.fineAccumulator == null || p.fineAccumulator <= 0) return;
-
-        Multa multa = new Multa();
-        multa.setViagem(viagem);
-        multa.setMotivo("Multa detectada automaticamente pelo agente");
-        multa.setValor(BigDecimal.valueOf(p.fineAccumulator).setScale(2, RoundingMode.HALF_UP));
-        multa.setOrigem(EventoViagem.Origem.TELEMETRIA);
-        eventos.save(multa);
     }
 
     private void detectarPedagioAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {

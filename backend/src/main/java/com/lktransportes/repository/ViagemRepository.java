@@ -58,6 +58,11 @@ public interface ViagemRepository extends JpaRepository<Viagem, UUID> {
 
     Optional<Viagem> findFirstByMotoristaIdOrderByNumeroDesc(UUID motoristaId);
     Optional<Viagem> findByVtlogJobId(String vtlogJobId);
+    Optional<Viagem> findByAgenteJobId(UUID agenteJobId);
+
+    @EntityGraph(attributePaths = {"eventos", "motorista", "caminhao", "carreta"})
+    @Query("select v from Viagem v where v.status = com.lktransportes.model.StatusViagem.CONCLUIDA and (v.conferencia = com.lktransportes.model.Viagem$Conferencia.RETIDA or v.pendenciaMultas is not null) order by v.finalizadaEm")
+    List<Viagem> pendentesDeConferencia();
 
     /** Peso em curso de várias demandas de uma vez, pra não fazer N consultas na listagem. */
     @Query("""
@@ -91,6 +96,7 @@ public interface ViagemRepository extends JpaRepository<Viagem, UUID> {
            select v from Viagem v
            where v.status = com.lktransportes.model.StatusViagem.CONCLUIDA
              and v.pagamento is null
+             and v.pendenciaMultas is null
              and v.conferencia in (com.lktransportes.model.Viagem$Conferencia.APROVADA,
                                    com.lktransportes.model.Viagem$Conferencia.LIBERADA)
              and (?1 is null or v.motorista.id = ?1)

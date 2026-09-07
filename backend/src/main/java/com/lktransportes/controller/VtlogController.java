@@ -31,22 +31,20 @@ public class VtlogController {
     private final VtlogService vtlog;
     private final ObjectMapper mapper;
     private final com.lktransportes.service.VtlogJobCache jobCache;
+    private final com.lktransportes.service.VtlogWebhook webhook;
 
     // Cache em memória do último snapshot recebido pelo webhook do VTLog.
     private volatile String snapshotJson = null;
     private volatile Instant snapshotAtualizado = null;
 
-    /** Último valor de fines conhecido por steam_id — para calcular deltas. */
-    private final ConcurrentHashMap<String, Double> multasAnteriores = new ConcurrentHashMap<>();
-
-    /** Último valor de toll pago por steam_id — para calcular deltas. */
-    private final ConcurrentHashMap<String, Double> pedagiosAnteriores = new ConcurrentHashMap<>();
 
     public VtlogController(VtlogService vtlog, ObjectMapper mapper,
-                           com.lktransportes.service.VtlogJobCache jobCache) {
+                           com.lktransportes.service.VtlogJobCache jobCache,
+                           com.lktransportes.service.VtlogWebhook webhook) {
         this.vtlog = vtlog;
         this.mapper = mapper;
         this.jobCache = jobCache;
+        this.webhook = webhook;
     }
 
     @PostMapping("/entrega")
@@ -66,7 +64,7 @@ public class VtlogController {
                     req.empresa_origem, req.empresa_destino,
                     req.carga, req.peso_kg,
                     req.distancia_km, req.combustivel_gasto_l, req.dano_pct,
-                    req.valor_frete
+                    req.valor_frete, req.total_multas, req.inicio_epoch_ms, req.fim_epoch_ms
             ));
             return ResponseEntity.ok(Map.of(
                     "viagem", v.getNumero(),
@@ -81,108 +79,19 @@ public class VtlogController {
 
     /** Recebe o snapshot ao vivo do VTLog via webhook (event: live.snapshot). */
     @PostMapping("/live-snapshot")
-    public ResponseEntity<?> liveSnapshot(@RequestBody String payload) {
-        log.info("[VTLog] live-snapshot recebido: {}", payload);
+    public ResponseEntity<?> liveSnapshot(@RequestBody byte[] corpo,
+            @RequestHeader(value = "X-VTLog-Signature", required = false) String assinatura) {
+        webhook.validar(corpo, assinatura);
+        String payload = new String(corpo, java.nio.charset.StandardCharsets.UTF_8);
+        try { mapper.readTree(payload); }
+        catch (Exception e) { return ResponseEntity.badRequest().body(Map.of("erro", "JSON inválido.")); }
         snapshotJson = payload;
         snapshotAtualizado = Instant.now();
-        detectarMultas(payload);
-        detectarPedagios(payload);
+        // Ao vivo é informativo; despesas vêm dos recibos e do total definitivo da entrega.
         atualizarCacheJobs(payload);
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
-    /**
-     * Percorre o snapshot procurando `expense_fines` por driver.
-     * Quando o valor aumenta em relação ao anterior, registra uma Multa.
-     * Compatível com o formato VTLog: { drivers: [ { steam_id, economy: { expense_fines } } ] }
-     * ou variações com campo direto `fines` ou `expense_fines` no nível do driver.
-     */
-    private void detectarMultas(String payload) {
-        try {
-            JsonNode root = mapper.readTree(payload);
-            JsonNode drivers = root.path("drivers");
-            if (drivers.isMissingNode()) drivers = root.path("data");
-            if (!drivers.isArray()) return;
-
-            for (JsonNode d : drivers) {
-                String steamId = nomeOuNulo(d, "steam_id", "steamId");
-                if (steamId == null) continue;
-
-                double finesAtual = finesDeNode(d);
-                if (finesAtual < 0) continue;
-
-                Double anterior = multasAnteriores.put(steamId, finesAtual);
-                if (anterior != null && finesAtual > anterior) {
-                    double delta = finesAtual - anterior;
-                    vtlog.registrarMultaVtlog(steamId, delta);
-                }
-            }
-        } catch (Exception ignored) {
-            // Payload malformado não deve derrubar o endpoint.
-        }
-    }
-
-    /**
-     * Percorre o snapshot procurando `toll_paid`/`expense_toll` por driver.
-     * Quando o valor acumulado aumenta, registra um Pedagio.
-     * Compatível com variações de nomes de campo do VTLog.
-     */
-    private void detectarPedagios(String payload) {
-        try {
-            JsonNode root = mapper.readTree(payload);
-            JsonNode drivers = root.path("drivers");
-            if (drivers.isMissingNode()) drivers = root.path("data");
-            if (!drivers.isArray()) return;
-
-            for (JsonNode d : drivers) {
-                String steamId = nomeOuNulo(d, "steam_id", "steamId");
-                if (steamId == null) continue;
-
-                double tollAtual = tollDeNode(d);
-                if (tollAtual < 0) continue;
-
-                Double anterior = pedagiosAnteriores.put(steamId, tollAtual);
-                if (anterior != null && tollAtual > anterior) {
-                    double delta = tollAtual - anterior;
-                    vtlog.registrarPedagioVtlog(steamId, delta);
-                }
-            }
-        } catch (Exception ignored) {
-            // Payload malformado não deve derrubar o endpoint.
-        }
-    }
-
-    private double tollDeNode(JsonNode d) {
-        for (String campo : new String[]{"toll_paid", "tolls", "expense_toll", "toll"}) {
-            JsonNode v = d.path(campo);
-            if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
-        }
-        JsonNode eco = d.path("economy");
-        if (!eco.isMissingNode()) {
-            for (String campo : new String[]{"toll_paid", "tolls", "expense_toll", "toll"}) {
-                JsonNode v = eco.path(campo);
-                if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
-            }
-        }
-        return -1;
-    }
-
-    private double finesDeNode(JsonNode d) {
-        // Tenta vários caminhos conhecidos do VTLog
-        for (String campo : new String[]{"expense_fines", "fines"}) {
-            JsonNode v = d.path(campo);
-            if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
-        }
-        // economia aninhada
-        JsonNode eco = d.path("economy");
-        if (!eco.isMissingNode()) {
-            for (String campo : new String[]{"expense_fines", "fines"}) {
-                JsonNode v = eco.path(campo);
-                if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
-            }
-        }
-        return -1;
-    }
 
     /**
      * Extrai dados do job de cada driver no snapshot e salva no VtlogJobCache.
@@ -271,6 +180,9 @@ public class VtlogController {
             Double distancia_km,
             Double combustivel_gasto_l,
             Double dano_pct,
-            BigDecimal valor_frete
+            BigDecimal valor_frete,
+            BigDecimal total_multas,
+            Long inicio_epoch_ms,
+            Long fim_epoch_ms
     ) {}
 }

@@ -1,4 +1,5 @@
 import { Client, GatewayIntentBits } from 'discord.js';
+import { totalMultas } from './multas.js';
 
 const {
   DISCORD_TOKEN,
@@ -19,6 +20,7 @@ client.once('ready', async () => {
   console.log(`Bot conectado como ${client.user.tag}`);
   console.log(`Monitorando canal ${VTLOG_CHANNEL_ID}`);
   await varrerHistorico();
+  setInterval(() => varrerHistorico(), 60_000).unref();
 });
 
 /**
@@ -29,6 +31,8 @@ client.once('ready', async () => {
  * recusa job repetido (409), então repassar o histórico é seguro.
  */
 async function varrerHistorico() {
+  if (varrendo) return;
+  varrendo = true;
   try {
     const canal = await client.channels.fetch(VTLOG_CHANNEL_ID);
     const mensagens = await canal.messages.fetch({ limit: 50 });
@@ -55,6 +59,8 @@ async function varrerHistorico() {
     console.log(`[hist] varredura concluída — ${achados} job(s) encontrado(s)`);
   } catch (err) {
     console.error('[hist] falhou:', err.message);
+  } finally {
+    varrendo = false;
   }
 }
 
@@ -120,12 +126,17 @@ function extrairJobId(texto) {
 
 /** Motoristas que já foram avisados, para não repetir o aviso a cada entrega. */
 const jaAvisados = new Set();
+const confirmados = new Set();
+const emCurso = new Set();
+let varrendo = false;
 
 async function processarJob(jobId, canal, silencioso = false) {
+  if (confirmados.has(jobId) || emCurso.has(jobId)) return;
+  emCurso.add(jobId);
   try {
     // 1. Busca dados completos na API pública do VTLog
     const jobUrl = `https://api.vtlog.net/v1/jobs/${jobId}`;
-    const jobRes = await fetch(jobUrl);
+    const jobRes = await fetch(jobUrl, { signal: AbortSignal.timeout(15_000) });
     if (!jobRes.ok) {
       console.warn(`[VTLog] Job ${jobId} não encontrado na API (${jobRes.status})`);
       return;
@@ -165,6 +176,9 @@ async function processarJob(jobId, canal, silencioso = false) {
       combustivel_gasto_l: num(job.fuel_used),
       dano_pct: calcularDano(job),
       valor_frete: num(job.income),
+      total_multas: totalMultas(job),
+      inicio_epoch_ms: num(job.departure),
+      fim_epoch_ms: num(job.arrival),
     };
 
     console.log(`[VTLog] Enviando job ${jobId} para o backend...`, JSON.stringify(payload));
@@ -172,6 +186,7 @@ async function processarJob(jobId, canal, silencioso = false) {
     // 2. Envia para o backend LK
     const lkRes = await fetch(`${LK_API_URL}/vtlog/entrega`, {
       method: 'POST',
+      signal: AbortSignal.timeout(15_000),
       headers: {
         'Content-Type': 'application/json',
         'X-Vtlog-Secret': VTLOG_SECRET,
@@ -182,9 +197,9 @@ async function processarJob(jobId, canal, silencioso = false) {
     const resposta = await lkRes.json().catch(() => ({}));
 
     if (lkRes.ok) {
+      confirmados.add(jobId);
+      if (confirmados.size > 5000) confirmados.delete(confirmados.values().next().value);
       console.log(`[VTLog] Job ${jobId} registrado: viagem #${resposta.viagem}`);
-    } else if (lkRes.status === 409) {
-      console.log(`[VTLog] Job ${jobId} já registrado anteriormente.`);
     } else {
       console.error(`[VTLog] Erro ao registrar job ${jobId}: ${JSON.stringify(resposta)}`);
 
@@ -207,6 +222,8 @@ async function processarJob(jobId, canal, silencioso = false) {
     }
   } catch (err) {
     console.error(`[VTLog] Erro ao processar job ${jobId}:`, err.message);
+  } finally {
+    emCurso.delete(jobId);
   }
 }
 

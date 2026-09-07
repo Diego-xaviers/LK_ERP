@@ -51,6 +51,7 @@ export default function Conferencia() {
               <div className="conf__motivos">
                 <strong><Icon name="alertCircle" size={14} /> Por que ficou retida</strong>
                 <ul>
+                  {v.pendenciaMultas && <li>{v.pendenciaMultas}</li>}
                   {(v.motivosConferencia ?? '').split('\n').filter(Boolean).map((m) => (
                     <li key={m}>{m}</li>
                   ))}
@@ -59,7 +60,7 @@ export default function Conferencia() {
 
               <footer>
                 <button className="btn" onClick={() => setLiberando(v)}>
-                  <Icon name="check" size={15} /> Liberar pontuação e pagamento
+                  <Icon name="check" size={15} /> {v.pendenciaMultas ? 'Conferir multas' : 'Liberar pontuação e pagamento'}
                 </button>
               </footer>
             </article>
@@ -85,15 +86,16 @@ function ModalLiberar({ viagem, onFechar, onLiberado }: {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const liberar = () => api.post(`/viagens/${viagem.id}/liberar`, { observacao });
+  const liberar = () => api.post(`/viagens/${viagem.id}/${viagem.pendenciaMultas ? 'multas/conferir' : 'liberar'}`, { observacao });
 
   return (
     <div className="modal__overlay" onClick={onFechar}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Liberar viagem #{viagem.numero}</h3>
+        <h3>{viagem.pendenciaMultas ? 'Conferir multas da viagem' : 'Liberar viagem'} #{viagem.numero}</h3>
         <p className="conf__aviso-modal">
-          A viagem volta a pontuar e fica liberada para pagamento. Fica registrado
-          que foi você quem liberou.
+          {viagem.pendenciaMultas
+            ? 'Confirme que revisou os valores das multas. Esta ação registra sua justificativa e encerra a pendência; não altera o pagamento anterior nem libera outras divergências da viagem.'
+            : 'A viagem volta a pontuar e fica liberada para pagamento. Fica registrado que foi você quem liberou.'}
         </p>
         <label className="campo">
           <span>Por que está liberando?</span>
@@ -112,7 +114,7 @@ function ModalLiberar({ viagem, onFechar, onLiberado }: {
 
       {salvando && (
         <Processo
-          etapas={['Registrando a liberação', 'Creditando o frete no caixa', 'Abatendo a demanda']}
+          etapas={viagem.pendenciaMultas ? ['Registrando a conferência das multas'] : ['Registrando a liberação', 'Creditando o frete no caixa', 'Abatendo a demanda']}
           sucesso="Viagem liberada."
           trabalho={liberar}
           aoConcluir={onLiberado}
