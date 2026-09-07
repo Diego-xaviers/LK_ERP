@@ -9,7 +9,7 @@ import Historico from './pages/Historico';
 import Frota from './pages/Frota';
 import Parceiros from './pages/Parceiros';
 import Ranking from './pages/Ranking';
-import Telemetria from './pages/Telemetria';
+import Download from './pages/Download';
 import Perfil from './pages/Perfil';
 import Logistica from './pages/Logistica';
 import Conferencia from './pages/Conferencia';
@@ -35,8 +35,9 @@ function AppLogado() {
           <Route path="/frota" element={<Frota />} />
           <Route path="/credenciados" element={<Parceiros />} />
           <Route path="/ranking" element={<Ranking />} />
-          <Route path="/telemetria" element={<Telemetria />} />
+          <Route path="/telemetria" element={<Navigate to="/ao-vivo" replace />} />
           <Route path="/ao-vivo" element={<AoVivo />} />
+          <Route path="/download" element={<Download />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/logistica" element={<Logistica />} />
           <Route path="/conferencia" element={<Conferencia />} />

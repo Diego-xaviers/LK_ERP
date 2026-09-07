@@ -1,0 +1,99 @@
+.dl {
+  padding: 1.5rem;
+  max-width: 800px;
+}
+
+.dl__head {
+  margin-bottom: 1.5rem;
+}
+
+.dl__head h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.dl__head p {
+  margin: 0;
+  color: var(--ink-400);
+  font-size: 0.85rem;
+}
+
+.dl__card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.dl__card h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.dl__nota {
+  color: var(--ink-500);
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.dl__passos {
+  margin: 0 0 1.5rem;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dl__passos li {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ink-700);
+}
+
+.dl__passos strong {
+  color: var(--ink-900);
+}
+
+.dl__passos code {
+  font-family: monospace;
+  font-size: 0.82rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--ink-700);
+}
+
+.dl__passos a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.dl__passos a:hover {
+  text-decoration: underline;
+}
+
+.dl__baixar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  padding: 9px 14px;
+}
+
+.dl__rodape {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.dl__aviso {
+  font-size: 0.82rem;
+  color: var(--ink-500);
+}
