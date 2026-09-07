@@ -35,6 +35,14 @@ lk:
   url-api: ${URL_API:}
   # Segredo compartilhado com o bot do Discord para registrar entregas VTLog.
   vtlog-secret: ${VTLOG_SECRET:}
+  # URL pública do frontend — necessária para redirecionar após OAuth
+  frontend-url: ${FRONTEND_URL:}
+  # Discord OAuth — obtidos no Discord Developer Portal
+  discord:
+    client-id: ${DISCORD_CLIENT_ID:}
+    client-secret: ${DISCORD_CLIENT_SECRET:}
+    # Deve coincidir exatamente com o Redirect URI cadastrado no Discord Developer Portal
+    redirect-uri: ${DISCORD_REDIRECT_URI:}
   h2-console-liberado: false
 
 server:

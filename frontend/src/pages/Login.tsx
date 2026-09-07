@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { api, ApiError, sessao } from '../api/client';
+import { useState, useEffect } from 'react';
+import { api, ApiError, sessao, BASE } from '../api/client';
 import './Login.css';
 
 interface RespostaLogin { token: string; nome: string; papel: string }
@@ -9,6 +9,13 @@ export default function Login({ aoEntrar }: { aoEntrar: () => void }) {
   const [senha, setSenha] = useState('');
   const [entrando, setEntrando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [discordAtivo, setDiscordAtivo] = useState(false);
+
+  useEffect(() => {
+    api.get<{ discord: boolean }>('/auth/info')
+      .then(r => setDiscordAtivo(r.discord))
+      .catch(() => {});
+  }, []);
 
   async function submeter(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +59,15 @@ export default function Login({ aoEntrar }: { aoEntrar: () => void }) {
         <button className="btn login__entrar" type="submit" disabled={entrando}>
           {entrando ? 'Entrando...' : 'Entrar'}
         </button>
+
+        {discordAtivo && (
+          <>
+            <div className="login__separador"><span>ou</span></div>
+            <a className="btn login__discord" href={BASE + '/auth/discord'}>
+              Entrar com Discord
+            </a>
+          </>
+        )}
 
         <p className="login__nota">
           Ainda não tem acesso? O cadastro é liberado por um gestor.

@@ -25,3 +25,19 @@
   font-size: var(--text-sm); color: var(--ink-400); text-align: center;
   margin: 0; padding-top: var(--sp-2); border-top: 1px solid var(--line);
 }
+
+.login__separador{
+  display: flex; align-items: center; gap: var(--sp-2);
+  color: var(--ink-400); font-size: var(--text-sm);
+}
+.login__separador::before, .login__separador::after{
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
+
+.login__discord{
+  justify-content: center; text-align: center; text-decoration: none;
+  background: #5865F2; color: #fff; padding: 11px 16px;
+  border-radius: var(--radius-sm); font-weight: 600; font-size: var(--text-sm);
+  transition: background .15s;
+}
+.login__discord:hover{ background: #4752c4; }

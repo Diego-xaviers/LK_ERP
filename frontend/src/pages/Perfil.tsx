@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, ApiError } from '../api/client';
+import { api, ApiError, BASE } from '../api/client';
 import { useUsuario } from '../auth';
 import { useApi } from '../hooks/useApi';
 import { Carregando, Erro } from '../components/ui/Estado';
@@ -19,6 +19,7 @@ export default function Perfil() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
   const [assinando, setAssinando] = useState(false);
+  const [vinculandoSteam, setVinculandoSteam] = useState(false);
   const arquivoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (dados) setForm(dados); }, [dados]);
@@ -55,6 +56,18 @@ export default function Perfil() {
     };
     img.onerror = () => { setProblema('Não foi possível ler essa imagem.'); URL.revokeObjectURL(url); };
     img.src = url;
+  }
+
+  async function vincularSteam() {
+    setVinculandoSteam(true);
+    setProblema(null);
+    try {
+      const r = await api.post<{ code: string }>('/auth/steam/gerar-token');
+      window.location.href = BASE + '/auth/steam/iniciar?code=' + r.code;
+    } catch (e) {
+      setProblema(e instanceof ApiError ? e.message : 'Não foi possível iniciar a vinculação Steam.');
+      setVinculandoSteam(false);
+    }
   }
 
   async function salvar() {
@@ -149,8 +162,30 @@ export default function Perfil() {
 
           <Bloco titulo="Na transportadora">
             <Campo label="Apelido no jogo" valor={form.apelido} ao={(v) => campo('apelido', v)} />
-            <Campo label="Steam ID" valor={form.steamId} ao={(v) => campo('steamId', v)} />
-            <Campo label="Discord" valor={form.discord} ao={(v) => campo('discord', v)} />
+            <div className="campo">
+              <span>Steam ID</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input type="text" value={form.steamId ?? ''} style={{ flex: 1 }}
+                       onChange={(e) => campo('steamId', e.target.value)} />
+                <button type="button" className="btn btn--ghost"
+                        onClick={vincularSteam} disabled={vinculandoSteam}
+                        title="Autenticar no Steam para preencher automaticamente">
+                  {vinculandoSteam ? '...' : 'Vincular Steam'}
+                </button>
+              </div>
+            </div>
+            <div className="campo">
+              <span>Discord</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input type="text" value={form.discord ?? ''} style={{ flex: 1 }}
+                       onChange={(e) => campo('discord', e.target.value)} />
+                {form.discord && (
+                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-400)', whiteSpace: 'nowrap' }}>
+                    vinculado
+                  </span>
+                )}
+              </div>
+            </div>
             <label className="campo campo--largo">
               <span>Sobre você</span>
               <textarea rows={3} maxLength={600} value={form.sobre ?? ''}

@@ -19,8 +19,10 @@ import Loja from './pages/Loja';
 import Gestao from './pages/Gestao';
 import Admin from './pages/Admin';
 import AoVivo from './pages/AoVivo';
+import DiscordCallback from './pages/DiscordCallback';
+import SteamCallback from './pages/SteamCallback';
 
-export default function App() {
+function AppLogado() {
   return (
     <ProvedorUsuario>
       <AppShell>
@@ -47,5 +49,15 @@ export default function App() {
         </Routes>
       </AppShell>
     </ProvedorUsuario>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/auth/discord" element={<DiscordCallback />} />
+      <Route path="/auth/steam" element={<SteamCallback />} />
+      <Route path="/*" element={<AppLogado />} />
+    </Routes>
   );
 }

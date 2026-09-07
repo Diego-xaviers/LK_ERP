@@ -42,6 +42,10 @@ public class Usuario {
     @Column(name = "token_telemetria", unique = true, length = 64)
     private String tokenTelemetria;
 
+    /** ID do Discord — preenchido no login via OAuth. Nulo em contas criadas pelo e-mail. */
+    @Column(name = "discord_id", unique = true, length = 20)
+    private String discordId;
+
     public enum Papel { MOTORISTA, GESTOR }
     public enum StatusAcesso { PENDENTE, APROVADO, BLOQUEADO }
 
@@ -67,4 +71,6 @@ public class Usuario {
     @JsonIgnore
     public String getTokenTelemetria() { return tokenTelemetria; }
     public void setTokenTelemetria(String t) { this.tokenTelemetria = t; }
+    public String getDiscordId() { return discordId; }
+    public void setDiscordId(String v) { this.discordId = v; }
 }
