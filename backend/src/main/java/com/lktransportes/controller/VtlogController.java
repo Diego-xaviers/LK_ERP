@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lktransportes.model.Viagem;
 import com.lktransportes.service.VtlogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("/api/vtlog")
 public class VtlogController {
+
+    private static final Logger log = LoggerFactory.getLogger(VtlogController.class);
 
     private final VtlogService vtlog;
     private final ObjectMapper mapper;
@@ -78,6 +82,7 @@ public class VtlogController {
     /** Recebe o snapshot ao vivo do VTLog via webhook (event: live.snapshot). */
     @PostMapping("/live-snapshot")
     public ResponseEntity<?> liveSnapshot(@RequestBody String payload) {
+        log.info("[VTLog] live-snapshot recebido: {}", payload);
         snapshotJson = payload;
         snapshotAtualizado = Instant.now();
         detectarMultas(payload);
