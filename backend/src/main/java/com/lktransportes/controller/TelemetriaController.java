@@ -187,7 +187,7 @@ public class TelemetriaController {
 
         ByteArrayOutputStream saida = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(saida, StandardCharsets.UTF_8)) {
-            copiar(zip, "agente/LK-Transportes.vbs",         "LK-Transportes.vbs");
+            copiar(zip, "agente/LK-Transportes.bat",          "LK-Transportes.bat");
             copiar(zip, "agente/lk-telemetria-launcher.ps1", "lk-telemetria-launcher.ps1");
             copiar(zip, "agente/LEIA-ME.txt",                "LEIA-ME.txt");
             escrever(zip, "lk-telemetria.json", config);
