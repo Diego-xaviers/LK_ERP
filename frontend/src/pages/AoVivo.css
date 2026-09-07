@@ -1,34 +1,45 @@
 .vivo {
-  padding: 1.5rem;
-  max-width: 1400px;
+  padding: 1.25rem 1.5rem;
+  max-width: 1500px;
 }
 
 /* Cabeçalho */
 .vivo__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0;
+}
+
+.vivo__head-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .vivo__head h1 {
-  font-size: 1.5rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
-}
-
-.vivo__head p {
+  letter-spacing: 0.08em;
   margin: 0;
-  color: var(--ink-400);
-  font-size: 0.85rem;
+  text-transform: uppercase;
 }
 
 .vivo__head-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 1rem;
+}
+
+.vivo__head-subtitulo {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink-400);
+  text-transform: uppercase;
 }
 
 .vivo__atualizado {
@@ -36,356 +47,263 @@
   color: var(--ink-400);
 }
 
-.vivo__status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--ink-400);
-  white-space: nowrap;
-  border: 1px solid var(--line);
-}
-
-.vivo__status.is-online {
-  color: #22c55e;
-  border-color: #22c55e33;
-  background: #22c55e12;
-}
-
-.vivo__pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
-.vivo__status.is-online .vivo__pulse {
-  animation: vivo-pulso 1.4s ease-in-out infinite;
-}
-
-@keyframes vivo-pulso {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
-}
-
-/* Dot genérico */
+/* Dots */
 .vivo__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--ink-400);
   flex-shrink: 0;
 }
 
-.vivo__dot--sm {
-  width: 6px;
-  height: 6px;
-  margin-top: 3px;
+.vivo__dot--head {
+  width: 10px;
+  height: 10px;
 }
 
-/* Cockpit pessoal */
-.vivo__cockpit {
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.25rem;
+.vivo__dot--head.is-online {
+  background: #22c55e;
+  animation: vivo-pulso 1.4s ease-in-out infinite;
 }
 
-.vivo__cockpit-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+.vivo__dot.is-online { background: #22c55e; }
+
+@keyframes vivo-pulso {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
 }
 
-.vivo__cockpit-titulo {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 700;
-  font-size: 0.88rem;
-}
-
-.vivo__cockpit-sub {
-  font-size: 0.78rem;
-  color: var(--ink-400);
-}
-
-.vivo__cockpit-dials {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-}
-
-.vivo__dial {
-  flex: 1;
-  min-width: 120px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.75rem;
-}
-
-.vivo__dial.is-alerta {
-  border-color: #ef444440;
-  background: #ef444410;
-}
-
-.vivo__dial-titulo {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--ink-400);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
-}
-
-.vivo__dial strong {
-  font-size: 1.3rem;
-  font-weight: 700;
-  display: block;
-}
-
-.vivo__dial strong small {
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--ink-400);
-  margin-left: 2px;
-}
-
-.vivo__dial-barra {
-  height: 4px;
-  background: var(--line);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 0.35rem;
-}
-
-.vivo__dial-barra i {
-  display: block;
-  height: 100%;
-  background: #3b82f6;
-  border-radius: 2px;
-  transition: width 0.5s;
-}
-
-.vivo__dial.is-alerta .vivo__dial-barra i {
-  background: #ef4444;
-}
-
-.vivo__cockpit-rota {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: var(--ink-500);
-  border-top: 1px solid var(--line);
-  padding-top: 0.6rem;
-}
-
-.vivo__cockpit-carga {
-  font-weight: 600;
-  color: var(--ink-700);
-}
-
-.vivo__cockpit-trecho {
-  color: var(--ink-400);
-}
-
-/* Pills */
-.vivo__bot-barra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 1rem;
-  font-size: 0.78rem;
-}
-
-.vivo__bot-label {
-  color: var(--ink-400);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.7rem;
-}
-
-.vivo__bot-pill {
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-/* Mapa */
-.vivo__mapa-wrap {
-  position: relative;
-  width: 100%;
-  height: 380px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: #0d1117;
-  margin-bottom: 1.25rem;
-}
-
-.vivo__mapa { width: 100%; height: 100%; }
-
-.vivo__mapa-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  color: #aaa;
-  font-size: 0.85rem;
-  text-align: center;
-  pointer-events: none;
-}
-
-.vivo__mapa-sub { font-size: 0.75rem; color: #666; margin-top: 4px; }
-
-.leaflet-container { background: #0d1117 !important; }
-.leaflet-tooltip { background: #1a1a2e; border-color: #333; color: #eee; font-size: 12px; }
-
-/* Tabela de motoristas */
+/* Tabela */
 .vivo__tabela-wrap {
   overflow-x: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  margin-bottom: 1.5rem;
 }
 
 .vivo__tabela {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
-  min-width: 800px;
+  font-size: 0.8rem;
+  min-width: 900px;
 }
 
 .vivo__tabela thead tr {
-  background: var(--surface-2);
   border-bottom: 1px solid var(--line);
 }
 
 .vivo__tabela th {
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1rem;
   text-align: left;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--ink-400);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   white-space: nowrap;
 }
 
 .vivo__linha {
   border-bottom: 1px solid var(--line);
-  transition: background 0.1s;
 }
 
 .vivo__linha:last-child { border-bottom: none; }
-.vivo__linha:hover { background: var(--surface-1); }
 
 .vivo__cel {
-  padding: 0.65rem 1rem;
-  vertical-align: middle;
+  padding: 0.75rem 1rem;
+  vertical-align: top;
 }
 
+/* Motorista */
 .vivo__cel--motorista {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  min-width: 160px;
+  min-width: 170px;
 }
 
-.vivo__cel--vel { text-align: center; }
+.vivo__motorista-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
 
 .vivo__nome {
   font-weight: 700;
   font-size: 0.85rem;
+  color: var(--ink-900);
   display: block;
 }
 
-.vivo__sub {
+.vivo__tag-linha {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.72rem;
   color: var(--ink-400);
-  display: block;
-  margin-top: 1px;
 }
 
-.vivo__cel-val {
+.vivo__icon-inline {
+  font-size: 0.7rem;
+}
+
+/* Dano */
+.vivo__dano-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 70px;
+}
+
+.vivo__dano-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--ink-500);
+}
+
+/* Carga */
+.vivo__carga-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+}
+
+.vivo__carga-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--ink-500);
+}
+
+/* Combustível */
+.vivo__fuel-cabec {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.vivo__fuel-icone { font-size: 0.8rem; }
+
+.vivo__fuel-tipo {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--ink-700);
+  flex: 1;
+}
+
+.vivo__fuel-pct {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--ink-700);
+}
+
+.vivo__fuel-detalhe {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--ink-400);
+  margin-top: 3px;
+}
+
+/* Barras */
+.vivo__barra-wrap {
+  width: 100%;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.vivo__barra {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s;
+}
+
+/* Progresso */
+.vivo__prog-cabec {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.vivo__prog-icone { font-size: 0.8rem; }
+
+.vivo__prog-label {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.vivo__prog-pct {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--ink-700);
+}
+
+.vivo__prog-km {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--ink-500);
+  margin-top: 3px;
+}
+
+.vivo__prog-rota {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--ink-400);
   font-weight: 600;
-  font-size: 0.85rem;
-  display: block;
+  letter-spacing: 0.03em;
+  margin-top: 3px;
+}
+
+.vivo__prog-seta { color: var(--ink-300); }
+
+/* Finanças */
+.vivo__fin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vivo__fin-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .vivo__verde { color: #22c55e; }
 .vivo__vermelho { color: #ef4444; }
 
-.vivo__badge {
-  display: inline-block;
-  font-weight: 700;
-  font-size: 0.78rem;
-  padding: 1px 8px;
-  border-radius: 20px;
-}
+/* Velocidade */
+.vivo__cel--vel { text-align: center; }
 
-.vivo__badge--verde { background: #22c55e20; color: #22c55e; }
-.vivo__badge--amarelo { background: #f5a62320; color: #f5a623; }
-.vivo__badge--vermelho { background: #ef444420; color: #ef4444; }
-
-.vivo__barra-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.vivo__barra-wrap {
-  flex: 1;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--line);
-  overflow: hidden;
-  min-width: 50px;
-}
-
-.vivo__barra {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s;
-}
-
-/* Velocidade circular */
 .vivo__velcirc {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid var(--line);
   margin: 0 auto;
 }
 
-.vivo__velcirc.is-acima {
-  border-color: #ef4444;
-}
+.vivo__velcirc.is-acima { border-color: #ef4444; }
 
 .vivo__vel-num {
   font-size: 1rem;
@@ -394,83 +312,22 @@
 }
 
 .vivo__vel-lim {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   color: var(--ink-400);
+  margin-top: 1px;
 }
 
 .vivo__velcirc.is-acima .vivo__vel-num { color: #ef4444; }
+.vivo__velcirc.is-acima .vivo__vel-lim { color: #ef4444; }
 
-/* Conferência de viagem */
-.vivo__conferencia {
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.vivo__conferencia h2 {
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin: 0 0 0.75rem;
-}
-
-.vivo__conf-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.vivo__conf-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
-}
-
-.vivo__conf-item span {
-  font-size: 0.7rem;
-  color: var(--ink-400);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.vivo__conf-item strong {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.vivo__sinais {
-  background: #f5a62310;
-  border: 1px solid #f5a62330;
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.75rem;
+/* Vazio */
+.vivo__vazio-cel {
+  color: var(--ink-300);
   font-size: 0.8rem;
 }
 
-.vivo__sinais ul {
-  margin: 0.25rem 0 0;
-  padding-left: 1rem;
-}
-
-.vivo__sinais li { margin: 2px 0; }
-
-/* Erro e vazio */
-.vivo__erro {
-  padding: 0.75rem 1rem;
-  background: #ef444420;
-  color: #ef4444;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-}
-
 .vivo__vazio {
-  padding: 3rem 1rem;
+  padding: 4rem 1rem;
   text-align: center;
   color: var(--ink-400);
 }
@@ -480,7 +337,12 @@
   margin-top: 0.5rem;
 }
 
-@media (max-width: 900px) {
-  .vivo__cockpit-dials { flex-direction: column; }
-  .vivo__conf-grid { grid-template-columns: 1fr 1fr; }
+/* Erro */
+.vivo__erro {
+  padding: 0.75rem 1rem;
+  background: #ef444420;
+  color: #ef4444;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
