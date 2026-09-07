@@ -38,9 +38,6 @@ public class TelemetriaService {
     /** Distância entre dois pings que nenhum caminhão faz dirigindo (~2 s). */
     private static final double SALTO_METROS = 1000.0;
 
-    /** Último estado do flag financeiro — detecta borda de subida (false→true). */
-    private final ConcurrentHashMap<UUID, Boolean> ultimoTollgate = new ConcurrentHashMap<>();
-
     private final UsuarioRepository usuarios;
     private final ViagemRepository viagens;
     private final TelemetriaSessaoRepository sessoes;
@@ -300,7 +297,6 @@ public class TelemetriaService {
 
         detectarAbastecimento(viagem, tv, p);
         detectarAvaria(viagem, tv, danoAgora);
-        detectarPedagioAgente(viagem, viagem.getMotorista().getId(), p);
         registrarSinais(tv, p, posAnteriorX, posAnteriorZ);
         conferirComDeclarado(viagem, tv, p);
         mapa.observar(tv, p);
@@ -339,20 +335,6 @@ public class TelemetriaService {
 
             tv.setLitrosAbastecidos(tv.getLitrosAbastecidos() + litros);
         }
-    }
-
-    private void detectarPedagioAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        boolean flagAtual = Boolean.TRUE.equals(p.tollgate);
-        Boolean flagAnterior = ultimoTollgate.put(motoristaId, flagAtual);
-        if (!flagAtual || Boolean.TRUE.equals(flagAnterior)) return;
-        if (p.tollAccumulator == null || p.tollAccumulator <= 0) return;
-
-        Pedagio pedagio = new Pedagio();
-        pedagio.setViagem(viagem);
-        pedagio.setLocal("Pedágio detectado automaticamente pelo agente");
-        pedagio.setValor(BigDecimal.valueOf(p.tollAccumulator).setScale(2, RoundingMode.HALF_UP));
-        pedagio.setOrigem(EventoViagem.Origem.TELEMETRIA);
-        eventos.save(pedagio);
     }
 
     private void detectarAvaria(Viagem viagem, TelemetriaViagem tv, double danoAgora) {

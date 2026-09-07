@@ -14,6 +14,18 @@
 - A viagem com agente fica pendente para acerto até chegar o total definitivo. Divergência, total ausente ou atualização após pagamento exigem conferência da gestão. A justificativa fica registrada em uma ocorrência. O pagamento anterior e a comissão por km não são recalculados.
 - Snapshots ao vivo não geram despesas. Sua assinatura HMAC-SHA256 deve corresponder ao corpo bruto em `X-VTLog-Signature`, como hexadecimal ou `sha256=<hex>`. O segredo é `VTLOG_WEBHOOK_SECRET`, diferente de `VTLOG_SECRET` usado pelo bot. Sem configuração, o webhook responde 503; assinatura inválida responde 401.
 
+## Outras despesas automáticas
+
+- **Combustível:** o agente mostra cada abastecimento durante a viagem; no fechamento,
+  `expense_fuel`, `fuel_used` e `price_fuel` criam o custo definitivo do combustível.
+- **Pedágio:** o bot consulta `/v1/jobs/{id}/events` e importa cada evento `toll` pelo ID
+  único do VTLog. Um lançamento antigo do agente com mesmo valor e horário é adotado,
+  não duplicado.
+- **Oficina:** despesas de cabine, chassi, motor, câmbio, rodas e carreta, inclusive
+  desgaste, são somadas numa manutenção automática detalhada.
+- Reenvios são idempotentes. Uma correção recebida depois de um acerto não altera o
+  pagamento histórico silenciosamente: ela abre uma pendência para a gestão.
+
 ## Implantação coordenada
 
 1. Configurar no serviço LK_ERP o segredo de assinatura do webhook existente no VTLog, em `VTLOG_WEBHOOK_SECRET`. Não criar uma chave aleatória somente no Railway: os dois lados precisam usar o mesmo segredo.

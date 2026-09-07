@@ -35,7 +35,8 @@ public class Abastecimento extends EventoViagem {
 
     @Override
     public String descricaoCurta() {
-        return "Abastecimento — " + (posto != null ? posto.getNome() : "");
+        return posto != null ? "Abastecimento — " + posto.getNome()
+                : (getValor() != null ? "Combustível da viagem — VTLog" : "Abastecimento detectado");
     }
 
     public Posto getPosto() { return posto; }

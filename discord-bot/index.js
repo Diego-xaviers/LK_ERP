@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import { totalMultas } from './multas.js';
+import { despesasDoJob } from './despesas.js';
 
 const {
   DISCORD_TOKEN,
@@ -162,6 +163,13 @@ async function processarJob(jobId, canal, silencioso = false) {
       return;
     }
 
+    // Os eventos têm pedágios individualizados e IDs estáveis. Se esta chamada
+    // falhar, não confirma o job: a próxima varredura tenta novamente sem perder custo.
+    const eventosRes = await fetch(`${jobUrl}/events`, { signal: AbortSignal.timeout(15_000) });
+    if (!eventosRes.ok) throw new Error(`eventos do job ${jobId} indisponíveis (${eventosRes.status})`);
+    const eventosCru = await eventosRes.json();
+    const resumoDespesas = despesasDoJob(job, eventosCru);
+
     // Monta payload para o backend
     const payload = {
       job_id: String(jobId),
@@ -179,6 +187,7 @@ async function processarJob(jobId, canal, silencioso = false) {
       total_multas: totalMultas(job),
       inicio_epoch_ms: num(job.departure),
       fim_epoch_ms: num(job.arrival),
+      ...resumoDespesas,
     };
 
     console.log(`[VTLog] Enviando job ${jobId} para o backend...`, JSON.stringify(payload));

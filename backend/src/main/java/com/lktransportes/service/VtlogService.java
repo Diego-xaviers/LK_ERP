@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,13 +21,15 @@ public class VtlogService {
     private final ViagemService viagemService;
     private final MultasService multas;
     private final UsuarioRepository usuarios;
+    private final DespesasVtlogService despesas;
 
     @Value("${lk.vtlog-secret:}")
     private String vtlogSecret;
 
     public VtlogService(PerfilRepository perfis, ViagemRepository viagens,
                         TelemetriaViagemRepository telemetrias, EventoViagemRepository eventos,
-                        ViagemService viagemService, MultasService multas, UsuarioRepository usuarios) {
+                        ViagemService viagemService, MultasService multas, UsuarioRepository usuarios,
+                        DespesasVtlogService despesas) {
         this.perfis = perfis;
         this.viagens = viagens;
         this.telemetrias = telemetrias;
@@ -34,6 +37,7 @@ public class VtlogService {
         this.viagemService = viagemService;
         this.multas = multas;
         this.usuarios = usuarios;
+        this.despesas = despesas;
     }
 
 
@@ -58,8 +62,9 @@ public class VtlogService {
             Viagem v = existentePorJob.get();
             if (!v.getMotorista().getId().equals(motorista.getId()))
                 throw new IllegalArgumentException("Job vinculado a outro motorista.");
-            multas.conferir(v, req.totalMultas());
             if (v.getStatus() == StatusViagem.EM_ANDAMENTO) return concluirViagemAtiva(v, req);
+            multas.conferir(v, req.totalMultas());
+            despesas.registrar(v, req);
             return v;
         }
         // Não associa um job antigo automaticamente à carga que estiver ativa agora.
@@ -75,8 +80,9 @@ public class VtlogService {
         if (candidatas.size() == 1) {
             Viagem v = candidatas.getFirst();
             v.setVtlogJobId(req.jobId());
-            multas.conferir(v, req.totalMultas());
             if (v.getStatus() == StatusViagem.EM_ANDAMENTO) return concluirViagemAtiva(v, req);
+            multas.conferir(v, req.totalMultas());
+            despesas.registrar(v, req);
             return viagens.save(v);
         }
 
@@ -141,6 +147,7 @@ public class VtlogService {
         });
 
         multas.conferir(v, req.totalMultas());
+        despesas.registrar(v, req);
         // Finaliza pelo caminho completo: conferência, crédito de frete, etc.
         viagemService.finalizar(v.getId(), null, null);
 
@@ -182,6 +189,7 @@ public class VtlogService {
         telemetrias.save(tel);
 
         multas.conferir(v, req.totalMultas());
+        despesas.registrar(v, req);
 
         viagemService.finalizar(v.getId(), null, null);
 
@@ -203,6 +211,14 @@ public class VtlogService {
             BigDecimal valorFrete,
             BigDecimal totalMultas,
             Long inicioEpochMs,
-            Long fimEpochMs
+            Long fimEpochMs,
+            BigDecimal totalCombustivel,
+            Double litrosCombustivel,
+            BigDecimal precoCombustivel,
+            BigDecimal totalManutencao,
+            String detalheManutencao,
+            List<EventoVtlog> pedagios
     ) {}
+
+    public record EventoVtlog(String id, BigDecimal valor, Long ocorridoEpochMs, String detalhe) {}
 }

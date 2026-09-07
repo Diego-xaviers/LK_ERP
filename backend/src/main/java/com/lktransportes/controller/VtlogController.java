@@ -64,7 +64,11 @@ public class VtlogController {
                     req.empresa_origem, req.empresa_destino,
                     req.carga, req.peso_kg,
                     req.distancia_km, req.combustivel_gasto_l, req.dano_pct,
-                    req.valor_frete, req.total_multas, req.inicio_epoch_ms, req.fim_epoch_ms
+                    req.valor_frete, req.total_multas, req.inicio_epoch_ms, req.fim_epoch_ms,
+                    req.total_combustivel, req.litros_combustivel, req.preco_combustivel,
+                    req.total_manutencao, req.detalhe_manutencao,
+                    req.pedagios == null ? java.util.List.of() : req.pedagios.stream()
+                            .map(p -> new VtlogService.EventoVtlog(p.id, p.valor, p.ocorrido_epoch_ms, p.detalhe)).toList()
             ));
             return ResponseEntity.ok(Map.of(
                     "viagem", v.getNumero(),
@@ -183,6 +187,14 @@ public class VtlogController {
             BigDecimal valor_frete,
             BigDecimal total_multas,
             Long inicio_epoch_ms,
-            Long fim_epoch_ms
+            Long fim_epoch_ms,
+            BigDecimal total_combustivel,
+            Double litros_combustivel,
+            BigDecimal preco_combustivel,
+            BigDecimal total_manutencao,
+            String detalhe_manutencao,
+            java.util.List<EventoRequest> pedagios
     ) {}
+
+    record EventoRequest(String id, BigDecimal valor, Long ocorrido_epoch_ms, String detalhe) {}
 }

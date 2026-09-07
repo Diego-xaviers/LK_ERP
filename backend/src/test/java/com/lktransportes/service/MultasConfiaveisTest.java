@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.*;
 class MultasConfiaveisTest {
     @Autowired MultasService multas;
     @Autowired CnhService cnhs;
+    @Autowired DespesasVtlogService despesasVtlog;
     @Autowired TelemetriaService telemetria;
     @Autowired VtlogService vtlog;
     @Autowired UsuarioRepository usuarios;
@@ -55,7 +56,7 @@ class MultasConfiaveisTest {
         new TransactionTemplate(transactions).executeWithoutResult(s -> multas.conferir(viagens.findById(viagem.getId()).orElseThrow(), valor == null ? null : new BigDecimal(valor)));
     }
     VtlogService.EntregaVtlog entrega(String job, String valor) {
-        return new VtlogService.EntregaVtlog(job, steam, "Sinop", "Cuiabá", "Origem", "Destino", "Soja", new BigDecimal("25000"), 100d, 30d, 0d, null, valor == null ? null : new BigDecimal(valor), System.currentTimeMillis()-60000, System.currentTimeMillis());
+        return new VtlogService.EntregaVtlog(job, steam, "Sinop", "Cuiabá", "Origem", "Destino", "Soja", new BigDecimal("25000"), 100d, 30d, 0d, null, valor == null ? null : new BigDecimal(valor), System.currentTimeMillis()-60000, System.currentTimeMillis(), BigDecimal.ZERO, 30d, BigDecimal.ONE, BigDecimal.ZERO, null, List.of());
     }
 
     @Test void recibosRepetidosMesmoValorERestart() {
@@ -147,7 +148,7 @@ class MultasConfiaveisTest {
 
     @Test void jobAntigoNaoFechaOutraCargaNaMesmaRota() {
         var req=entrega("999888","50");
-        var antigo=new VtlogService.EntregaVtlog(req.jobId(),req.steamId(),req.origem(),req.destino(),req.empresaOrigem(),req.empresaDestino(),req.carga(),req.pesoKg(),req.distanciaKm(),req.combustivelGastoL(),req.danoPct(),req.valorFrete(),req.totalMultas(),System.currentTimeMillis()-86400000,System.currentTimeMillis()-86000000);
+        var antigo=new VtlogService.EntregaVtlog(req.jobId(),req.steamId(),req.origem(),req.destino(),req.empresaOrigem(),req.empresaDestino(),req.carga(),req.pesoKg(),req.distanciaKm(),req.combustivelGastoL(),req.danoPct(),req.valorFrete(),req.totalMultas(),System.currentTimeMillis()-86400000,System.currentTimeMillis()-86000000,req.totalCombustivel(),req.litrosCombustivel(),req.precoCombustivel(),req.totalManutencao(),req.detalheManutencao(),req.pedagios());
         assertThatThrownBy(()->vtlog.registrarEntrega(antigo)).isInstanceOf(IllegalStateException.class);
         assertThat(viagens.findById(viagem.getId()).orElseThrow().getStatus()).isEqualTo(StatusViagem.EM_ANDAMENTO);
         assertThat(total()).isZero();
@@ -178,5 +179,34 @@ class MultasConfiaveisTest {
         multas.receber(motorista.getId(), List.of(atrasada));
         assertThat(cnhs.de(motorista.getId()).orElseThrow().getPontos())
             .isEqualTo(antes - CnhService.PONTOS_POR_MULTA);
+    }
+
+    @Test void combustivelOficinaEPedagioEntramUmaVezNaFatura() {
+        long agora = System.currentTimeMillis();
+        var req = new VtlogService.EntregaVtlog("778899", steam, "Sinop", "Cuiabá", "Origem", "Destino", "Soja",
+                new BigDecimal("25000"), 100d, 152d, 0d, null, BigDecimal.ZERO, agora - 60000, agora,
+                new BigDecimal("187"), 152d, new BigDecimal("1.233"), new BigDecimal("43"),
+                "motor: 7; câmbio: 6; rodas: 30",
+                List.of(new VtlogService.EventoVtlog("24237341", new BigDecimal("12"), agora - 1000, "BR-163")));
+        despesasVtlog.registrar(viagem, req);
+        despesasVtlog.registrar(viagem, req);
+        assertThat(total()).isEqualByComparingTo("242");
+        var lancados = eventos.findByViagemId(viagem.getId());
+        assertThat(lancados.stream().filter(Abastecimento.class::isInstance)).hasSize(1);
+        assertThat(lancados.stream().filter(Manutencao.class::isInstance)).hasSize(1);
+        assertThat(lancados.stream().filter(Pedagio.class::isInstance)).hasSize(1);
+    }
+
+    @Test void pedagioAntigoDoAgenteEhAdotadoSemDuplicar() {
+        long agora = System.currentTimeMillis();
+        Pedagio antigo = new Pedagio(); antigo.setViagem(viagem); antigo.setValor(new BigDecimal("12"));
+        antigo.setOrigem(EventoViagem.Origem.TELEMETRIA); eventos.save(antigo);
+        var req = new VtlogService.EntregaVtlog("778900", steam, "Sinop", "Cuiabá", "Origem", "Destino", "Soja",
+                new BigDecimal("25000"), 100d, 0d, 0d, null, BigDecimal.ZERO, agora - 60000, agora,
+                BigDecimal.ZERO, 0d, BigDecimal.ONE, BigDecimal.ZERO, null,
+                List.of(new VtlogService.EventoVtlog("24237342", new BigDecimal("12"), agora, null)));
+        despesasVtlog.registrar(viagem, req);
+        assertThat(eventos.findByViagemId(viagem.getId()).stream().filter(Pedagio.class::isInstance)).hasSize(1);
+        assertThat(eventos.findByChaveExterna("vtlog:evento:24237342")).isPresent();
     }
 }
