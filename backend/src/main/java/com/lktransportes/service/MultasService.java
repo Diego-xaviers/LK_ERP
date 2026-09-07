@@ -18,8 +18,10 @@ public class MultasService {
     private final EventoViagemRepository eventos;
     private final ViagemRepository viagens;
     private final UsuarioRepository usuarios;
-    public MultasService(EventoViagemRepository eventos, ViagemRepository viagens, UsuarioRepository usuarios) {
-        this.eventos = eventos; this.viagens = viagens; this.usuarios = usuarios;
+    private final CnhService cnhs;
+    public MultasService(EventoViagemRepository eventos, ViagemRepository viagens,
+                         UsuarioRepository usuarios, CnhService cnhs) {
+        this.eventos = eventos; this.viagens = viagens; this.usuarios = usuarios; this.cnhs = cnhs;
     }
 
     public static BigDecimal dinheiro(BigDecimal valor) {
@@ -60,6 +62,8 @@ public class MultasService {
             multa.setOrigem(EventoViagem.Origem.TELEMETRIA);
             eventos.saveAndFlush(multa);
             if (!v.getEventos().contains(multa)) v.getEventos().add(multa);
+            if (v.getStatus() == StatusViagem.CONCLUIDA)
+                cnhs.cobrarMultaAtrasada(v);
             if (v.getPagamento() != null)
                 v.setPendenciaMultas("Multa recebida após o acerto. Conferir despesas; o pagamento anterior não foi alterado.");
             recalcular(v);

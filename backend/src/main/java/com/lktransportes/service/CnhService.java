@@ -107,6 +107,20 @@ public class CnhService {
     }
 
     /**
+     * Cobra uma infração individual que chegou depois do encerramento da viagem.
+     * O recibo idempotente da multa garante que esta cobrança aconteça uma única vez.
+     */
+    @Transactional
+    public int cobrarMultaAtrasada(Viagem v) {
+        Optional<Cnh> talvez = cnhs.findByMotoristaId(v.getMotorista().getId());
+        if (talvez.isEmpty()) return 0;
+        Cnh c = talvez.get();
+        int perdidos = c.descontar(PONTOS_POR_MULTA);
+        cnhs.save(c);
+        return perdidos;
+    }
+
+    /**
      * Porta de entrada do trabalho: sem CNH válida o motorista não pega carga.
      * É esse bloqueio que faz a renovação importar.
      */

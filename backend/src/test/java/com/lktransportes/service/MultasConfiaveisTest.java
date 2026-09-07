@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.*;
 @ActiveProfiles("dev")
 class MultasConfiaveisTest {
     @Autowired MultasService multas;
+    @Autowired CnhService cnhs;
     @Autowired TelemetriaService telemetria;
     @Autowired VtlogService vtlog;
     @Autowired UsuarioRepository usuarios;
@@ -60,7 +61,7 @@ class MultasConfiaveisTest {
     @Test void recibosRepetidosMesmoValorERestart() {
         var a=multa("100"); var b=multa("100"); var c=multa("100");
         assertThat(multas.receber(motorista.getId(), List.of(a,b,c))).containsExactly(a.id(),b.id(),c.id());
-        new TransactionTemplate(transactions).executeWithoutResult(s -> new MultasService(eventos,viagens,usuarios).receber(motorista.getId(),List.of(a,b,c)));
+        new TransactionTemplate(transactions).executeWithoutResult(s -> new MultasService(eventos,viagens,usuarios,cnhs).receber(motorista.getId(),List.of(a,b,c)));
         assertThat(total()).isEqualByComparingTo("300");
         assertThat(eventos.findByViagemId(viagem.getId())).hasSize(3);
     }
@@ -165,5 +166,17 @@ class MultasConfiaveisTest {
         Viagem proxima=novaViagem(); multas.receber(motorista.getId(),List.of(antigo));
         assertThat(total()).isEqualByComparingTo("70");
         assertThat(viagens.findWithEventosById(proxima.getId()).orElseThrow().totalDespesas()).isZero();
+    }
+
+    @Test void multaAtrasadaAindaDescontaPontosDaCnhUmaVez() {
+        Usuario gestor = usuarios.findByEmail("admin@lk.com").orElseThrow();
+        cnhs.emitir(motorista.getId(), "E", java.time.LocalDate.now().plusMonths(3), gestor);
+        viagem.setStatus(StatusViagem.CONCLUIDA); viagens.save(viagem);
+        int antes = cnhs.de(motorista.getId()).orElseThrow().getPontos();
+        var atrasada = multa("150");
+        multas.receber(motorista.getId(), List.of(atrasada));
+        multas.receber(motorista.getId(), List.of(atrasada));
+        assertThat(cnhs.de(motorista.getId()).orElseThrow().getPontos())
+            .isEqualTo(antes - CnhService.PONTOS_POR_MULTA);
     }
 }
