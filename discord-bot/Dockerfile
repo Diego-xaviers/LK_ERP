@@ -4,4 +4,5 @@ COPY package*.json ./
 RUN npm install --omit=dev
 COPY index.js ./
 COPY multas.js ./
+COPY despesas.js ./
 CMD ["node", "index.js"]
