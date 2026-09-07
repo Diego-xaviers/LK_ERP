@@ -329,9 +329,9 @@ public class TelemetriaService {
     }
 
     private void detectarMultaAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        if (p.fineAccumulator == null || p.fineAccumulator <= 0) return;
+        if (p.fineAccumulator == null) return;
         Long anterior = ultimoFine.put(motoristaId, p.fineAccumulator);
-        // Acumulador zerou = novo job; apenas registra nova baseline
+        // anterior null = primeira leitura; apenas estabelece baseline
         if (anterior == null || p.fineAccumulator <= anterior) return;
         long delta = p.fineAccumulator - anterior;
 
@@ -344,7 +344,7 @@ public class TelemetriaService {
     }
 
     private void detectarPedagioAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        if (p.tollAccumulator == null || p.tollAccumulator <= 0) return;
+        if (p.tollAccumulator == null) return;
         Long anterior = ultimoToll.put(motoristaId, p.tollAccumulator);
         if (anterior == null || p.tollAccumulator <= anterior) return;
         long delta = p.tollAccumulator - anterior;
