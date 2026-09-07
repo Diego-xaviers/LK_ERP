@@ -73,11 +73,11 @@ public class TelemetriaController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** Frota ao vivo — todas as sessões com ping nos últimos 20 s. Restrito a gestores. */
+    /** Frota ao vivo — todas as sessões com ping nos últimos 30 s. Acessível a qualquer usuário autenticado. */
     @GetMapping("/frota")
     public List<Map<String, Object>> frota() {
-        sessao.exigirGestor();
-        java.time.LocalDateTime corte = java.time.LocalDateTime.now().minusSeconds(20);
+        sessao.obrigatoria(); // qualquer usuário autenticado pode ver a frota
+        java.time.LocalDateTime corte = java.time.LocalDateTime.now().minusSeconds(30);
         return sessoes.findRecentes(corte).stream()
                 .map(this::comoMapaFrota)
                 .toList();
@@ -85,19 +85,29 @@ public class TelemetriaController {
 
     private Map<String, Object> comoMapaFrota(TelemetriaSessao s) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("motoristaId",  s.getMotorista().getId());
-        m.put("motoristaNome", s.getMotorista().getNome());
-        m.put("velocidadeKmh", s.getVelocidadeKmh());
-        m.put("combustivelL",  s.getCombustivelL());
+        m.put("motoristaId",       s.getMotorista().getId());
+        m.put("motoristaNome",     s.getMotorista().getNome());
+        m.put("velocidadeKmh",     s.getVelocidadeKmh());
+        m.put("combustivelL",      s.getCombustivelL());
         m.put("combustivelCapacidadeL", s.getCombustivelCapacidadeL());
-        m.put("cidadeOrigem",  s.getCidadeOrigem());
-        m.put("cidadeDestino", s.getCidadeDestino());
-        m.put("cargaNome",     s.getCargaNome());
-        m.put("danoMotorPct",  s.getDanoMotorPct());
-        m.put("emServico",     s.getEmServico());
-        m.put("placaCaminhao", s.getPlacaCaminhao());
-        m.put("modeloCaminhao",s.getModeloCaminhao());
-        m.put("atualizadoEm",  s.getAtualizadoEm());
+        m.put("danoMotorPct",      s.getDanoMotorPct());
+        m.put("danoCambioPct",     s.getDanoCambioPct());
+        m.put("danoCabinePct",     s.getDanoCabinePct());
+        m.put("danoChassiPct",     s.getDanoChassiPct());
+        m.put("danoRodasPct",      s.getDanoRodasPct());
+        m.put("danoCargaPct",      s.getDanoCargaPct());
+        m.put("cargaNome",         s.getCargaNome());
+        m.put("cargaMassaKg",      s.getCargaMassaKg());
+        m.put("cidadeOrigem",      s.getCidadeOrigem());
+        m.put("cidadeDestino",     s.getCidadeDestino());
+        m.put("empresaOrigem",     s.getEmpresaOrigem());
+        m.put("empresaDestino",    s.getEmpresaDestino());
+        m.put("distanciaPlanejadaKm", s.getDistanciaPlanejadaKm());
+        m.put("placaCaminhao",     s.getPlacaCaminhao());
+        m.put("modeloCaminhao",    s.getModeloCaminhao());
+        m.put("emServico",         s.getEmServico());
+        m.put("pausado",           s.getPausado());
+        m.put("atualizadoEm",      s.getAtualizadoEm());
         return m;
     }
 
