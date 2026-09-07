@@ -512,25 +512,26 @@ class Launcher : Form {
 
     object[] LerEts2() {
         try {
-            using var mmf = MemoryMappedFile.OpenExisting(@"Local\SCSTelemetry");
-            using var acc = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
-            if (acc.ReadInt32(0) == 0) return null;
-            return new object[] {
-                (double)(acc.ReadSingle(32) * 3.6f),   // velocidade km/h
-                (double)acc.ReadSingle(108),            // combustivel L
-                (double)acc.ReadSingle(112),            // capacidade L
-                (double)(acc.ReadSingle(240) * 100),    // dano motor %
-                (double)(acc.ReadSingle(244) * 100),    // dano cambio %
-                (double)(acc.ReadSingle(248) * 100),    // dano cabine %
-                (double)(acc.ReadSingle(252) * 100),    // dano chassi %
-                (double)(acc.ReadSingle(256) * 100),    // dano rodas %
-                acc.ReadBoolean(420),                   // emServico
-                acc.ReadBoolean(424),                   // entregaFeita
-                acc.ReadBoolean(432),                   // abastecendo
-                (double)acc.ReadSingle(48),             // posX
-                (double)acc.ReadSingle(52),             // posY
-                (double)acc.ReadSingle(56),             // posZ
-            };
+            using (var mmf = MemoryMappedFile.OpenExisting(@"Local\SCSTelemetry"))
+            using (var acc = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read)) {
+                if (acc.ReadInt32(0) == 0) return null;
+                return new object[] {
+                    (double)(acc.ReadSingle(32) * 3.6f),
+                    (double)acc.ReadSingle(108),
+                    (double)acc.ReadSingle(112),
+                    (double)(acc.ReadSingle(240) * 100),
+                    (double)(acc.ReadSingle(244) * 100),
+                    (double)(acc.ReadSingle(248) * 100),
+                    (double)(acc.ReadSingle(252) * 100),
+                    (double)(acc.ReadSingle(256) * 100),
+                    acc.ReadBoolean(420),
+                    acc.ReadBoolean(424),
+                    acc.ReadBoolean(432),
+                    (double)acc.ReadSingle(48),
+                    (double)acc.ReadSingle(52),
+                    (double)acc.ReadSingle(56),
+                };
+            }
         } catch { return null; }
     }
 
@@ -581,13 +582,13 @@ static class GdiExt {
     }
     public static void FillRoundedRect(this Graphics g, Brush b, int x, int y, int w, int h, int r) {
         if (w <= 0 || h <= 0) return;
-        using var p = RoundPath(x, y, w, h, Math.Min(r, Math.Min(w/2, h/2)));
-        g.FillPath(b, p);
+        using (var p = RoundPath(x, y, w, h, Math.Min(r, Math.Min(w/2, h/2))))
+            g.FillPath(b, p);
     }
     public static void DrawRoundedRect(this Graphics g, Pen pen, int x, int y, int w, int h, int r) {
         if (w <= 0 || h <= 0) return;
-        using var p = RoundPath(x, y, w, h, Math.Min(r, Math.Min(w/2, h/2)));
-        g.DrawPath(pen, p);
+        using (var p = RoundPath(x, y, w, h, Math.Min(r, Math.Min(w/2, h/2))))
+            g.DrawPath(pen, p);
     }
 }
 '@
