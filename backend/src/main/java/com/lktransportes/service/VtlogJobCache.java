@@ -25,6 +25,7 @@ public class VtlogJobCache {
     }
 
     public record DadosJob(
+            String jobId,
             String cargaNome,
             String cidadeOrigem,
             String cidadeDestino,

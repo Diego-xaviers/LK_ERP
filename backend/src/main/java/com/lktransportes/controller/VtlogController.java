@@ -151,6 +151,7 @@ public class VtlogController {
                     continue;
                 }
 
+                String jobId    = nomeOuNulo(d, "job_id", "current_job", "jobId", "id");
                 String cargo    = nomeOuNulo(d, "cargo", "cargo_name", "cargo_id");
                 String origem   = nomeOuNulo(d, "source_city", "origin_city", "job_origin",    "source_city_real_name");
                 String destino  = nomeOuNulo(d, "destination_city", "dest_city", "job_destination", "destination_city_real_name");
@@ -160,7 +161,7 @@ public class VtlogController {
                 Integer dist    = intDeNode(d, "planned_distance", "job_distance", "distance");
 
                 jobCache.atualizar(steamId, new com.lktransportes.service.VtlogJobCache.DadosJob(
-                        cargo, origem, destino, empOrig, empDest, massa, dist));
+                        jobId, cargo, origem, destino, empOrig, empDest, massa, dist));
             }
         } catch (Exception ignored) {}
     }

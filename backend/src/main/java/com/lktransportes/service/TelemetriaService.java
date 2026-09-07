@@ -121,12 +121,17 @@ public class TelemetriaService {
                 sessao.setAcaoPendente("VIAGEM_CRIADA:" + v.getNumero()));
         }
 
-        // Entrega feita: conclui a viagem ativa automaticamente
+        // Entrega feita: conclui a viagem ativa pelo caminho completo
         if (!Boolean.TRUE.equals(eraEntrega) && Boolean.TRUE.equals(ping.entregaFeita)) {
             viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
-                v.setStatus(StatusViagem.CONCLUIDA);
-                viagens.save(v);
-                sessao.setAcaoPendente("ENTREGA_CONCLUIDA:" + v.getNumero());
+                int numero = v.getNumero();
+                try {
+                    viagemService.finalizar(v.getId(), null, null);
+                } catch (Exception e) {
+                    // finalizar() já lança se status != EM_ANDAMENTO — ignora caso de corrida
+                    return;
+                }
+                sessao.setAcaoPendente("ENTREGA_CONCLUIDA:" + numero);
             });
         }
 
@@ -189,6 +194,14 @@ public class TelemetriaService {
                 : BigDecimal.ZERO);
         v.setMotorista(motorista);
         v.setCaminhao(caminhao.get());
+        // Vincula o job VTLog se disponível no cache — permite idempotência posterior
+        perfis.findByUsuarioId(motorista.getId())
+              .map(com.lktransportes.model.Perfil::getSteamId)
+              .filter(sid -> sid != null && !sid.isBlank())
+              .flatMap(vtlogCache::buscar)
+              .map(VtlogJobCache.DadosJob::jobId)
+              .ifPresent(v::setVtlogJobId);
+
         v = viagens.save(v);
 
         viagemService.gerarDocumentos(v.getId());
