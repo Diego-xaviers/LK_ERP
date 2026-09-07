@@ -55,6 +55,10 @@ public class TelemetriaPing {
     public Long tollAccumulator;
     public Long ferryAccumulator;
 
+    /** Flags de evento financeiro — true no ping imediatamente após o evento (offsets 4304/4305). */
+    public Boolean fined;
+    public Boolean tollgate;
+
     /** O dano do caminhão é o pior entre os componentes. */
     public double danoCaminhaoPct() {
         return Math.max(Math.max(nz(desgasteMotorPct), nz(desgasteCambioPct)),

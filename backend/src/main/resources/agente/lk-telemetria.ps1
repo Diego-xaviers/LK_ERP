@@ -105,6 +105,10 @@ function ConvertTo-Payload([byte[]] $b) {
         abastecendo   = (Get-Bool $b 4308)
         entregaFeita  = (Get-Bool $b 4303)
 
+        # Flags de evento financeiro (Zone 12, offsets 4304-4305)
+        fined    = (Get-Bool $b 4304)
+        tollgate = (Get-Bool $b 4305)
+
         cargaNome      = (Get-Texto $b 2620)
         cargaMassaKg   = (Get-Float $b 748)
         cidadeOrigem   = (Get-Texto $b 3004)

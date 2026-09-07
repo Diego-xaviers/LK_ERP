@@ -34,10 +34,9 @@ public class TelemetriaService {
     /** Distância entre dois pings que nenhum caminhão faz dirigindo (~2 s). */
     private static final double SALTO_METROS = 1000.0;
 
-    /** Último acumulador financeiro do jogo por motorista — para calcular deltas. */
-    private final ConcurrentHashMap<UUID, Long> ultimoFine  = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Long> ultimoToll  = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Long> ultimoFerry = new ConcurrentHashMap<>();
+    /** Último estado do flag financeiro — detecta borda de subida (false→true). */
+    private final ConcurrentHashMap<UUID, Boolean> ultimoFined    = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Boolean> ultimoTollgate = new ConcurrentHashMap<>();
 
     private final UsuarioRepository usuarios;
     private final ViagemRepository viagens;
@@ -329,30 +328,30 @@ public class TelemetriaService {
     }
 
     private void detectarMultaAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        if (p.fineAccumulator == null) return;
-        Long anterior = ultimoFine.put(motoristaId, p.fineAccumulator);
-        // anterior null = primeira leitura; apenas estabelece baseline
-        if (anterior == null || p.fineAccumulator <= anterior) return;
-        long delta = p.fineAccumulator - anterior;
+        boolean flagAtual = Boolean.TRUE.equals(p.fined);
+        Boolean flagAnterior = ultimoFined.put(motoristaId, flagAtual);
+        // borda de subida: era false (ou nunca visto) e agora é true
+        if (!flagAtual || Boolean.TRUE.equals(flagAnterior)) return;
+        if (p.fineAccumulator == null || p.fineAccumulator <= 0) return;
 
         Multa multa = new Multa();
         multa.setViagem(viagem);
         multa.setMotivo("Multa detectada automaticamente pelo agente");
-        multa.setValor(BigDecimal.valueOf(delta).setScale(2, RoundingMode.HALF_UP));
+        multa.setValor(BigDecimal.valueOf(p.fineAccumulator).setScale(2, RoundingMode.HALF_UP));
         multa.setOrigem(EventoViagem.Origem.TELEMETRIA);
         eventos.save(multa);
     }
 
     private void detectarPedagioAgente(Viagem viagem, UUID motoristaId, TelemetriaPing p) {
-        if (p.tollAccumulator == null) return;
-        Long anterior = ultimoToll.put(motoristaId, p.tollAccumulator);
-        if (anterior == null || p.tollAccumulator <= anterior) return;
-        long delta = p.tollAccumulator - anterior;
+        boolean flagAtual = Boolean.TRUE.equals(p.tollgate);
+        Boolean flagAnterior = ultimoTollgate.put(motoristaId, flagAtual);
+        if (!flagAtual || Boolean.TRUE.equals(flagAnterior)) return;
+        if (p.tollAccumulator == null || p.tollAccumulator <= 0) return;
 
         Pedagio pedagio = new Pedagio();
         pedagio.setViagem(viagem);
         pedagio.setLocal("Pedágio detectado automaticamente pelo agente");
-        pedagio.setValor(BigDecimal.valueOf(delta).setScale(2, RoundingMode.HALF_UP));
+        pedagio.setValor(BigDecimal.valueOf(p.tollAccumulator).setScale(2, RoundingMode.HALF_UP));
         pedagio.setOrigem(EventoViagem.Origem.TELEMETRIA);
         eventos.save(pedagio);
     }
