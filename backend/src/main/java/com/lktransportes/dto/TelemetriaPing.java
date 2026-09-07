@@ -50,6 +50,11 @@ public class TelemetriaPing {
     public String modeloCaminhao;
     public Integer jogo;
 
+    /** Acumuladores financeiros do job atual (int64 do scs-sdk-plugin, offset 4216/4224/4232). */
+    public Long fineAccumulator;
+    public Long tollAccumulator;
+    public Long ferryAccumulator;
+
     /** O dano do caminhão é o pior entre os componentes. */
     public double danoCaminhaoPct() {
         return Math.max(Math.max(nz(desgasteMotorPct), nz(desgasteCambioPct)),

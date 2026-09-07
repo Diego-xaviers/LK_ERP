@@ -64,6 +64,7 @@ function Get-Double([byte[]] $b, [int] $off) { [Math]::Round([BitConverter]::ToD
 function Get-Bool([byte[]] $b, [int] $off) { $b[$off] -ne 0 }
 function Get-UInt([byte[]] $b, [int] $off) { [BitConverter]::ToUInt32($b, $off) }
 function Get-Int([byte[]] $b, [int] $off) { [BitConverter]::ToInt32($b, $off) }
+function Get-Int64([byte[]] $b, [int] $off) { [BitConverter]::ToInt64($b, $off) }
 
 function ConvertTo-Payload([byte[]] $b) {
     # Desgaste vem 0..1 no jogo; o painel trabalha em porcentagem.
@@ -117,6 +118,12 @@ function ConvertTo-Payload([byte[]] $b) {
         placaCaminhao = (Get-Texto $b 3212)
         modeloCaminhao = (Get-Texto $b 2492)
         jogo = (Get-UInt $b 52)   # 1 = ETS2, 2 = ATS
+
+        # Acumuladores financeiros (int64, aumentam durante o job)
+        # fineAmount offset 4216, tollgatePayAmount offset 4224
+        fineAccumulator  = (Get-Int64 $b 4216)
+        tollAccumulator  = (Get-Int64 $b 4224)
+        ferryAccumulator = (Get-Int64 $b 4232)
     }
 }
 
