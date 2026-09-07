@@ -228,16 +228,16 @@ function LinhaMotorista({ m }: { m: MotoristaVivo }) {
 
 export default function AoVivo() {
   const [snapshot, setSnapshot] = useState<SnapshotResponse | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
+  const [semConexao, setSemConexao] = useState(false);
 
   useEffect(() => {
     let ativo = true;
     async function buscar() {
       try {
         const dados = await api.get<SnapshotResponse>('/vtlog/live');
-        if (ativo) { setSnapshot(dados); setErro(null); }
+        if (ativo) { setSnapshot(dados); setSemConexao(false); }
       } catch {
-        if (ativo) setErro('Erro ao buscar dados ao vivo.');
+        if (ativo) setSemConexao(true);
       }
     }
     buscar();
@@ -257,15 +257,15 @@ export default function AoVivo() {
         </div>
         <div className="vivo__head-right">
           <span className="vivo__head-subtitulo">TELEMETRIA EM TEMPO REAL DE MOTORISTAS CONECTADOS</span>
-          {snapshot?.atualizado && (
-            <span className="vivo__atualizado">
-              {new Date(snapshot.atualizado).toLocaleTimeString('pt-BR')}
-            </span>
-          )}
+          {semConexao
+            ? <span className="vivo__reconectando">Reconectando...</span>
+            : snapshot?.atualizado && (
+              <span className="vivo__atualizado">
+                {new Date(snapshot.atualizado).toLocaleTimeString('pt-BR')}
+              </span>
+            )}
         </div>
       </header>
-
-      {erro && <div className="vivo__erro">{erro}</div>}
 
       {online ? (
         <div className="vivo__tabela-wrap">

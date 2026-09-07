@@ -337,12 +337,13 @@
   margin-top: 0.5rem;
 }
 
-/* Erro */
-.vivo__erro {
-  padding: 0.75rem 1rem;
-  background: #ef444420;
-  color: #ef4444;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
+.vivo__reconectando {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  animation: vivo-pisca 1.2s ease-in-out infinite;
+}
+
+@keyframes vivo-pisca {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
