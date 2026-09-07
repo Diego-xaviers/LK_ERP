@@ -198,18 +198,11 @@ public class VtlogController {
     /** Retorna o último snapshot ao vivo para o frontend. Exige JWT. */
     @GetMapping("/live")
     public ResponseEntity<?> live() {
-        if (snapshotJson == null) {
-            return ResponseEntity.ok(Map.of(
-                "motoristas", java.util.List.of(),
-                "atualizado", (Object) null,
-                "online", false
-            ));
-        }
-        return ResponseEntity.ok(Map.of(
-            "snapshot", snapshotJson,
-            "atualizado", snapshotAtualizado.toString(),
-            "online", true
-        ));
+        java.util.Map<String, Object> resp = new java.util.HashMap<>();
+        resp.put("online", snapshotJson != null);
+        resp.put("atualizado", snapshotAtualizado != null ? snapshotAtualizado.toString() : null);
+        resp.put("snapshot", snapshotJson);
+        return ResponseEntity.ok(resp);
     }
 
     record EntregaRequest(
