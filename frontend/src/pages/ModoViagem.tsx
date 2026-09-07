@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, ApiError, BASE, sessao } from '../api/client';
+import { api, ApiError } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { Viagem, Posto, Oficina, TelemetriaAtual, TelemetriaViagem as TViagemTipo, MotoristaFrota } from '../api/tipos';
 import { Carregando, Erro, Vazio } from '../components/ui/Estado';
@@ -151,7 +151,7 @@ export default function ModoViagem() {
 // Estado: sem viagem ativa
 // ---------------------------------------------------------------------------
 
-function SemViagem({ motoristaId }: { motoristaId: string }) {
+function SemViagem({ motoristaId: _motoristaId }: { motoristaId: string }) {
   return (
     <div className="vp">
       <Vazio
@@ -159,10 +159,6 @@ function SemViagem({ motoristaId }: { motoristaId: string }) {
         descricao="Entre numa demanda na Logística para começar."
         acao={<Link className="btn" to="/logistica" style={{ marginTop: 12, textDecoration: 'none' }}>Ver demandas abertas</Link>}
       />
-      {/* Card de download do agente sempre visível */}
-      <div style={{ maxWidth: 380 }}>
-        <CartaoAgente motoristaId={motoristaId} />
-      </div>
       <FrotaOnline />
     </div>
   );
@@ -303,8 +299,6 @@ function CockpitTele({ motoristaId, viagemId }: { motoristaId: string; viagemId:
         </div>
       )}
 
-      {/* Card do agente (quando offline) */}
-      {!online && <CartaoAgente motoristaId={motoristaId} />}
     </aside>
   );
 }
@@ -352,43 +346,6 @@ function Velocimetro({ kmh }: { kmh?: number }) {
         return <line key={v} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-400)" strokeWidth={1.5} />;
       })}
     </svg>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Card de instalação do agente (quando offline)
-// ---------------------------------------------------------------------------
-
-function CartaoAgente({ motoristaId }: { motoristaId: string }) {
-  const [baixando, setBaixando] = useState(false);
-
-  async function baixar() {
-    setBaixando(true);
-    try {
-      const r = await fetch(`${BASE}/telemetria/agente/${motoristaId}`, {
-        headers: { Authorization: `Bearer ${sessao.token()}` },
-      });
-      if (!r.ok) throw new Error();
-      const url = URL.createObjectURL(await r.blob());
-      const a = document.createElement('a');
-      a.href = url; a.download = 'LK-Telemetria.zip'; a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setBaixando(false);
-    }
-  }
-
-  return (
-    <div className="vp__card vp__agente-card">
-      <div className="vp__agente-icone">📡</div>
-      <p className="vp__agente-txt">
-        Ligue o agente de telemetria para ver velocidade, combustível e danos em tempo real.
-      </p>
-      <button className="btn vp__agente-btn" onClick={baixar} disabled={baixando}>
-        {baixando ? 'Preparando...' : 'Baixar agente LK'}
-      </button>
-      <span className="vp__agente-hint">Windows · ETS2/ATS</span>
-    </div>
   );
 }
 

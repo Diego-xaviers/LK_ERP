@@ -7,21 +7,35 @@ import Icon from '../components/ui/Icon';
 import { TelemetriaAtual, TelemetriaViagem, Viagem } from '../api/tipos';
 import './Telemetria.css';
 
+type EstadoAgente = 'conectando' | 'online' | 'offline';
+
 export default function Telemetria() {
   const usuario = useUsuario();
   const { dados, carregando, erro, recarregar } = useApi<TelemetriaAtual>(`/telemetria/atual/${usuario.id}`);
   const { dados: viagem } = useApi<Viagem>(`/viagens/ativa/${usuario.id}`);
+  const [estado, setEstado] = useState<EstadoAgente>('conectando');
 
-  // O painel só faz sentido ao vivo — reconsulta enquanto a aba estiver aberta.
   useEffect(() => {
     const t = setInterval(recarregar, 3000);
     return () => clearInterval(t);
   }, [recarregar]);
 
-  if (carregando && !dados) return <Carregando texto="Procurando o agente..." />;
+  // Atualiza estado conforme resposta da API
+  useEffect(() => {
+    if (carregando && !dados) return; // ainda na primeira carga
+    if (dados?.online) setEstado('online');
+    else setEstado((e) => e === 'conectando' ? 'offline' : e);
+  }, [dados, carregando]);
+
+  // Depois de 12s sem conectar, assume offline
+  useEffect(() => {
+    const t = setTimeout(() => setEstado((e) => e === 'conectando' ? 'offline' : e), 12_000);
+    return () => clearTimeout(t);
+  }, []);
+
   if (erro) return <Erro mensagem={erro} aoTentarNovamente={recarregar} />;
 
-  const online = dados?.online ?? false;
+  const statusLabel = { conectando: 'Conectando...', online: 'Agente conectado', offline: 'Agente offline' }[estado];
 
   return (
     <div className="tele">
@@ -30,13 +44,13 @@ export default function Telemetria() {
           <h1>Telemetria</h1>
           <p>O jogo alimentando o painel enquanto você dirige</p>
         </div>
-        <span className={'tele__status' + (online ? ' is-online' : '')}>
+        <span className={'tele__status' + (estado === 'online' ? ' is-online' : estado === 'conectando' ? ' is-conectando' : '')}>
           <span className="tele__dot" />
-          {online ? 'Agente conectado' : 'Agente desconectado'}
+          {statusLabel}
         </span>
       </header>
 
-      {online && dados ? <AoVivo t={dados} /> : <Instalacao motoristaId={usuario.id} />}
+      {estado === 'online' && dados ? <AoVivo t={dados} /> : <Instalacao motoristaId={usuario.id} estado={estado === 'online' ? 'offline' : estado} />}
 
       {viagem && <ConferenciaViagem viagemId={viagem.id} numero={viagem.numero} />}
     </div>
@@ -177,7 +191,7 @@ function ConferenciaViagem({ viagemId, numero }: { viagemId: string; numero: num
 
 // ---------------------------------------------------------------------------
 
-function Instalacao({ motoristaId }: { motoristaId: string }) {
+function Instalacao({ motoristaId, estado }: { motoristaId: string; estado: 'conectando' | 'offline' }) {
   const [gerando, setGerando] = useState(false);
   const [baixando, setBaixando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -222,6 +236,12 @@ function Instalacao({ motoristaId }: { motoristaId: string }) {
 
   return (
     <section className="tele__card tele__instalacao">
+      {estado === 'conectando' && (
+        <div className="tele__conectando">
+          <span className="tele__dot tele__dot--pulso" />
+          Aguardando o agente conectar... Abra o <code>LK-Telemetria.bat</code> e deixe a janela aberta.
+        </div>
+      )}
       <h2>Ligue o seu jogo ao painel</h2>
       <p className="tele__nota">
         O agente lê a telemetria do Euro Truck Simulator 2 e envia para cá. Ele só lê —
