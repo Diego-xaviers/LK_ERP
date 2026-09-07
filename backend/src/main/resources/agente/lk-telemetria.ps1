@@ -193,6 +193,10 @@ while ($true) {
                 } else {
                     Write-Estado 'Conectado, mas sem viagem em andamento no painel.' 'Yellow'
                 }
+                # Debug financeiro - mostra sempre que houver valor
+                if ($payload.fineAccumulator -gt 0 -or $payload.tollAccumulator -gt 0) {
+                    Write-Host ("  [FIN] multa={0} pedagio={1} balsa={2}" -f $payload.fineAccumulator, $payload.tollAccumulator, $payload.ferryAccumulator) -ForegroundColor Magenta
+                }
             }
         }
     } catch {
