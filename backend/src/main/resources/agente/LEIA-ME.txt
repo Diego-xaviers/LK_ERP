@@ -9,8 +9,7 @@ Simulator 2 e manda para o painel da LK: velocidade,
 combustivel, dano, distancia e abastecimentos.
 
 Com ele ligado, sua viagem no painel se preenche sozinha
-enquanto voce dirige - e a viagem abre e fecha automaticamente
-quando voce pega e entrega carga no jogo.
+enquanto voce dirige.
 
 
 ANTES DE COMECAR
@@ -28,13 +27,15 @@ COMO USAR
 1. Descompacte esta pasta em qualquer lugar (ex.: Documentos).
    IMPORTANTE: descompacte de verdade, nao rode de dentro do .zip.
 
-2. De dois cliques em  LK-Transportes.exe
+2. De dois cliques em  LK-Transportes.vbs
 
-3. O icone LK aparece na barra de tarefas.
-   Clique no icone para abrir o painel.
-   Para fechar a janela: clique no [x] - o agente continua rodando
-   em segundo plano. Para encerrar de verdade: botao direito no
-   icone da barra > Encerrar agente.
+   Na PRIMEIRA abertura, o aplicativo compila o painel (leva
+   alguns segundos). Nas proximas vezes abre instantaneamente.
+
+3. O icone LK aparece na barra de tarefas. Clique duas vezes
+   para abrir o painel de telemetria.
+   Para fechar a janela: clique [x] — o agente continua rodando.
+   Para encerrar: botao direito no icone > Encerrar agente.
 
 4. Abra o ETS2, entre numa partida e pegue carga.
    A viagem abre sozinha no painel!
@@ -49,8 +50,11 @@ PERGUNTAS COMUNS
    Voce gerou um token novo no painel. Baixe o pacote de novo.
 
 O Windows bloqueou o arquivo
-   Clique com o botao direito no EXE > Propriedades > Desbloquear.
-   Ou: Configuracoes do Windows > Seguranca > Permitir aplicativo.
+   Clique com o botao direito no VBS > Propriedades > Desbloquear.
+
+Erro na compilacao (primeira abertura)
+   Requer .NET Framework 4.6+ (incluido no Windows 10/11).
+   Acesse Windows Update e instale as atualizacoes pendentes.
 
 
 O agente so LE a memoria do jogo e envia para o painel da LK.
