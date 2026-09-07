@@ -49,6 +49,23 @@ public class VtlogService {
         });
     }
 
+    /** Chamado pelo VtlogController quando detecta pagamento de pedágio no snapshot ao vivo. */
+    @Transactional
+    public void registrarPedagioVtlog(String steamId, double valor) {
+        Optional<Perfil> perfilOpt = perfis.findBySteamId(steamId);
+        if (perfilOpt.isEmpty()) return;
+
+        Usuario motorista = perfilOpt.get().getUsuario();
+        viagens.buscarAtivaSimples(motorista.getId(), StatusViagem.EM_ANDAMENTO).ifPresent(v -> {
+            Pedagio pedagio = new Pedagio();
+            pedagio.setViagem(v);
+            pedagio.setLocal("Pedágio detectado automaticamente via VTLog");
+            pedagio.setValor(BigDecimal.valueOf(valor).setScale(2, java.math.RoundingMode.HALF_UP));
+            pedagio.setOrigem(EventoViagem.Origem.TELEMETRIA);
+            eventos.save(pedagio);
+        });
+    }
+
     public void validarSegredo(String cabecalho) {
         if (vtlogSecret.isBlank() || !vtlogSecret.equals(cabecalho)) {
             throw new SecurityException("Segredo inválido.");

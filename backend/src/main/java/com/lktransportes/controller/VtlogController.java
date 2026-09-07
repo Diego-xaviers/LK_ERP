@@ -35,6 +35,9 @@ public class VtlogController {
     /** Último valor de fines conhecido por steam_id — para calcular deltas. */
     private final ConcurrentHashMap<String, Double> multasAnteriores = new ConcurrentHashMap<>();
 
+    /** Último valor de toll pago por steam_id — para calcular deltas. */
+    private final ConcurrentHashMap<String, Double> pedagiosAnteriores = new ConcurrentHashMap<>();
+
     public VtlogController(VtlogService vtlog, ObjectMapper mapper,
                            com.lktransportes.service.VtlogJobCache jobCache) {
         this.vtlog = vtlog;
@@ -78,6 +81,7 @@ public class VtlogController {
         snapshotJson = payload;
         snapshotAtualizado = Instant.now();
         detectarMultas(payload);
+        detectarPedagios(payload);
         atualizarCacheJobs(payload);
         return ResponseEntity.ok(Map.of("ok", true));
     }
@@ -111,6 +115,51 @@ public class VtlogController {
         } catch (Exception ignored) {
             // Payload malformado não deve derrubar o endpoint.
         }
+    }
+
+    /**
+     * Percorre o snapshot procurando `toll_paid`/`expense_toll` por driver.
+     * Quando o valor acumulado aumenta, registra um Pedagio.
+     * Compatível com variações de nomes de campo do VTLog.
+     */
+    private void detectarPedagios(String payload) {
+        try {
+            JsonNode root = mapper.readTree(payload);
+            JsonNode drivers = root.path("drivers");
+            if (drivers.isMissingNode()) drivers = root.path("data");
+            if (!drivers.isArray()) return;
+
+            for (JsonNode d : drivers) {
+                String steamId = nomeOuNulo(d, "steam_id", "steamId");
+                if (steamId == null) continue;
+
+                double tollAtual = tollDeNode(d);
+                if (tollAtual < 0) continue;
+
+                Double anterior = pedagiosAnteriores.put(steamId, tollAtual);
+                if (anterior != null && tollAtual > anterior) {
+                    double delta = tollAtual - anterior;
+                    vtlog.registrarPedagioVtlog(steamId, delta);
+                }
+            }
+        } catch (Exception ignored) {
+            // Payload malformado não deve derrubar o endpoint.
+        }
+    }
+
+    private double tollDeNode(JsonNode d) {
+        for (String campo : new String[]{"toll_paid", "tolls", "expense_toll", "toll"}) {
+            JsonNode v = d.path(campo);
+            if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
+        }
+        JsonNode eco = d.path("economy");
+        if (!eco.isMissingNode()) {
+            for (String campo : new String[]{"toll_paid", "tolls", "expense_toll", "toll"}) {
+                JsonNode v = eco.path(campo);
+                if (!v.isMissingNode() && v.isNumber()) return v.asDouble();
+            }
+        }
+        return -1;
     }
 
     private double finesDeNode(JsonNode d) {
